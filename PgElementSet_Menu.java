@@ -91,17 +91,16 @@ public class PgElementSet_Menu extends PgPointSet_Menu {
 			dialog.setVisible(true);
 			break;
 		case Topology:
-			//TODO change this code to our own workshop. atm its a copy of the case above
 			// info: the case Topology refers to our workshop. it is specified at the top of this document in enum MenuEntry
-			Registration asdf = new Registration();
-			asdf.setGeometry(m_elementSet);
+			Topology topo = new Topology();
+			topo.setGeometry(m_elementSet);
 			if (currDisp == null) {
 				if (PsDebug.WARNING) PsDebug.warning("missing display.");
 			} else
-				asdf.setDisplay(currDisp);
+				topo.setDisplay(currDisp);
 			dialog = new PjWorkshop_Dialog(false);
-			dialog.setParent(asdf);
-			dialog.update(asdf);
+			dialog.setParent(topo);
+			dialog.update(topo);
 			dialog.setVisible(true);
 			break;
 		}
