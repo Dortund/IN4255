@@ -1,9 +1,9 @@
 package workshop;
 
-import java.util.List;
-
 import jv.geom.PgElementSet;
+import jv.object.PsDebug;
 import jv.project.PgGeometry;
+import jv.vecmath.PdVector;
 import jv.vecmath.PiVector;
 import jvx.project.PjWorkshop;
 
@@ -37,8 +37,37 @@ public class Topology extends PjWorkshop {
 	}
 	
 	public double calculateVolume() {
-		
-		return -1;
+		if (m_geom.getMaxDimOfElements() == 3) {
+			double total = 0;
+			if (!m_geom.hasElementNormals())
+				m_geom.makeElementNormals();
+			for (int i = 0; i < m_geom.getNumElements(); i++) {
+				PiVector element = m_geom.getElement(i);
+				PdVector a = m_geom.getVertex(element.getEntry(0));
+				PdVector b = m_geom.getVertex(element.getEntry(1));
+				PdVector c = m_geom.getVertex(element.getEntry(2));
+				double vol = PdVector.crossNew(b, c).dot(a);
+				
+				PdVector normal = m_geom.getElementNormal(i);
+				PdVector faceMid = new PdVector(
+						(a.getEntry(0) + b.getEntry(0) + b.getEntry(0)) / 3,
+						(a.getEntry(1) + b.getEntry(1) + b.getEntry(1)) / 3,
+						(a.getEntry(2) + b.getEntry(2) + b.getEntry(2)) / 3);
+				faceMid.normalize();
+				double angle = normal.dot(faceMid);
+				if (angle > 0) {
+					total += vol;
+				} else {
+					total -= vol;
+				}
+			}
+			/*PdVector[] bounds = m_geom.getBounds();
+			double temp = (bounds[1].getEntry(0) - bounds[0].getEntry(0))
+					* (bounds[1].getEntry(1) - bounds[0].getEntry(1))
+					* (bounds[1].getEntry(2) - bounds[0].getEntry(2));*/
+			return total / 6;
+		}
+		return - m_geom.getMaxDimOfElements();
 	}
 	
 	public int calculateComponents() {
