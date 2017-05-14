@@ -1,11 +1,13 @@
 package workshop;
 
+import Jama.SingularValueDecomposition;
 import jv.geom.PgElementSet;
 import jv.object.PsDialog;
 import jv.object.PsUpdateIf;
 import jv.objectGui.PsList;
 import jv.project.PgGeometryIf;
 import jv.project.PvGeometryIf;
+import jv.vecmath.PdMatrix;
 import jv.vecmath.PdVector;
 import jv.viewer.PvDisplay;
 import jvx.project.PjWorkshop_IP;
@@ -32,6 +34,8 @@ public class RigidTransformation_IP extends PjWorkshop_IP implements ActionListe
     protected Label lblMedian;
     protected Label lblConfig;
     protected Label lblNewSize;
+	protected Label lblError;
+	protected Label lblStep;
 
 	/** Constructor */
 	public RigidTransformation_IP () {
@@ -81,22 +85,31 @@ public class RigidTransformation_IP extends PjWorkshop_IP implements ActionListe
 		pSetSurfaces.add(m_bSetSurfaces, BorderLayout.CENTER);
 		add(pSetSurfaces);
 
-		Panel panelBottom = new Panel(new GridLayout(4,2));
+		Panel panelBottom = new Panel(new GridLayout(10,1));
         btnTransform = new Button("Transform");
         btnTransform.addActionListener(this);
         lbl = new Label();
         lblMedian = new Label();
         lblConfig = new Label();
         lblNewSize = new Label();
+		lblError = new Label();
+		lblStep = new Label();
         panelBottom.add(btnTransform);
         panelBottom.add(lbl);
         panelBottom.add(lblConfig);
         panelBottom.add(lblMedian);
         panelBottom.add(lblNewSize);
+		panelBottom.add(lblError);
+		panelBottom.add(lblStep);
         add(panelBottom);
 
 		updateGeomList();
 		validate();
+	}
+
+	@Override
+	public Dimension getDialogSize() {
+		return new Dimension(500, 500);
 	}
 		
 	/** Initialisation */
@@ -143,33 +156,70 @@ public class RigidTransformation_IP extends PjWorkshop_IP implements ActionListe
 			(PgElementSet)m_geomList.elementAt(m_listPassive.getSelectedIndex()));
 			return;
 		} else if(source == btnTransform) {
-		    int nrVertices = 100;
-            int k = 3;
-
-            lblConfig.setText("n:" + nrVertices + " k:" + k);
-
-            lbl.setText("Calculating random vertices");
-            PdVector[] randomVertices = m_registration.getRandomVertices(nrVertices);
-
-            lbl.setText("Calculating closest vertices");
-            PdVector[] closestVertices = m_registration.getClosestVertices(randomVertices);
-
-            lbl.setText("Calculating median");
-            double[] distances = m_registration.getAllDistances(randomVertices, closestVertices);
-            double median = m_registration.getMedian(distances);
-            lblMedian.setText("Median: " + median + " threshold: " + (k * median));
-
-            lbl.setText("Calculating remove list");
-            boolean[] listToRemove = m_registration.getRemoveList(distances, median, k);
-
-            lbl.setText("Creating new removed lists");
-            PdVector[] randomVerticesRemoved = m_registration.removeVertices(randomVertices, listToRemove);
-            PdVector[] closestVerticesRemoved = m_registration.removeVertices(closestVertices, listToRemove);
-            lblNewSize.setText("New size:(" + randomVerticesRemoved.length + "," + closestVerticesRemoved.length + ")");
-
-            lbl.setText("Done");
+		    this.applyRigidTransformation();
         }
 	}
+
+	private void applyRigidTransformation() {
+		int nrVertices = 100;
+		int k = 2;
+		int maxSteps = 500;
+		double maxError = 0.01;
+
+		lblConfig.setText("n:" + nrVertices + " k:" + k);
+
+		for(int steps = 0; steps < maxSteps; steps++) {
+			lblStep.setText("Step: " + steps);
+			lbl.setText("Calculating random vertices");
+			PdVector[] randomVertices = m_registration.getRandomVertices(nrVertices);
+
+			lbl.setText("Calculating closest vertices");
+			PdVector[] closestVertices = m_registration.getClosestVertices(randomVertices);
+
+			lbl.setText("Calculating median");
+			double[] distances = m_registration.getAllDistances(randomVertices, closestVertices);
+			double median = m_registration.getMedian(distances);
+			lblMedian.setText("Median: " + median + " threshold: " + (k * median));
+
+			lbl.setText("Calculating remove list");
+			boolean[] listToRemove = m_registration.getRemoveList(distances, median, k);
+
+			lbl.setText("Creating new removed lists");
+			PdVector[] pointsP = m_registration.removeVertices(randomVertices, listToRemove);
+			PdVector[] pointsQ = m_registration.removeVertices(closestVertices, listToRemove);
+			lblNewSize.setText("New size:(" + pointsP.length + "," + pointsQ.length + ")");
+
+			double error = m_registration.calculateError(pointsP, pointsQ);
+			lblError.setText("Error: " + error);
+
+			if(error < maxError) {
+				break;
+			}
+
+			lbl.setText("Calculating matrix M");
+			PdMatrix M = m_registration.computeM(pointsP, pointsQ);
+
+			lbl.setText("Calculating SVD");
+			SingularValueDecomposition svd = new SingularValueDecomposition(new Jama.Matrix(M.getEntries()));
+
+			lbl.setText("Calculating optimal rotation");
+			PdMatrix optimalRotation = m_registration.computeOptimalRotation(svd);
+
+			lbl.setText("Calculating optimal translation");
+			PdVector optimalTranslation = m_registration.computeOptimalTranslation(pointsP, pointsQ, optimalRotation);
+
+			lbl.setText("Rotating");
+			m_registration.rotatePMesh(optimalRotation);
+
+			lbl.setText("Translating");
+			m_registration.translatePMesh(optimalTranslation);
+
+			lbl.setText("Updating P mesh");
+			m_registration.m_surfP.update(m_registration.m_surfP);
+		}
+		lbl.setText("Done");
+	}
+
 	/**
 	 * Get information which bottom buttons a dialog should create
 	 * when showing this info panel.
