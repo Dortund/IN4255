@@ -12,5 +12,6 @@
 			<attribute name="javadoc_location" value="file:/C:/Users/nomen/Documents/IN4255/javaview/doc/reference/"/>
 		</attributes>
 	</classpathentry>
+	<classpathentry kind="lib" path="C:/Users/nomen/Documents/IN4255/javaview/jars/Jama-1.0.3.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
