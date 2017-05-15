@@ -1,5 +1,7 @@
 package workshop;
 
+import java.util.Stack;
+
 import jv.geom.PgElementSet;
 import jv.object.PsDebug;
 import jv.project.PgGeometry;
@@ -32,22 +34,33 @@ public class Topology extends PjWorkshop {
 		int v = m_geom.getNumVertices();
 		int e = m_geom.getNumEdges();
 		int f = m_geom.getNumElements();
-		int x = 1 - ((v - e + f) / 2);
+		// (V - E + F) = 2(1 - g)
+		int x = (int) (1.0 - ((v - e + f) / 2.0));
+		
+		// Some debug output to verify the used numbers
+		PsDebug.warning("Vertices: " + v + ", Edges: " + e + ", Faces: " + f);
+		
 		return x;
 	}
 	
 	public double calculateVolume() {
+		// Make sure we can calculate tetrahedrons
 		if (m_geom.getMaxDimOfElements() == 3) {
 			double total = 0;
+			// Make sure we have face normals
 			if (!m_geom.hasElementNormals())
 				m_geom.makeElementNormals();
+			
+			// Calculate volume for each face
 			for (int i = 0; i < m_geom.getNumElements(); i++) {
+				// Calculate volume
 				PiVector element = m_geom.getElement(i);
 				PdVector a = m_geom.getVertex(element.getEntry(0));
 				PdVector b = m_geom.getVertex(element.getEntry(1));
 				PdVector c = m_geom.getVertex(element.getEntry(2));
 				double vol = PdVector.crossNew(b, c).dot(a);
 				
+				// Find out if the face is facing towards or away from the origin
 				PdVector normal = m_geom.getElementNormal(i);
 				PdVector faceMid = new PdVector(
 						(a.getEntry(0) + b.getEntry(0) + b.getEntry(0)) / 3,
@@ -55,23 +68,25 @@ public class Topology extends PjWorkshop {
 						(a.getEntry(2) + b.getEntry(2) + b.getEntry(2)) / 3);
 				faceMid.normalize();
 				double angle = normal.dot(faceMid);
+				
+				// If facing away, it is a positive volume, else it is a negative volume
 				if (angle > 0) {
 					total += vol;
 				} else {
 					total -= vol;
 				}
 			}
-			/*PdVector[] bounds = m_geom.getBounds();
-			double temp = (bounds[1].getEntry(0) - bounds[0].getEntry(0))
-					* (bounds[1].getEntry(1) - bounds[0].getEntry(1))
-					* (bounds[1].getEntry(2) - bounds[0].getEntry(2));*/
+			// Some debug output to verify our own output
+			PsDebug.warning(m_geom.getVolume() +  "");
+			
+			// We still need to divide the volume by 6 to get the correct tetrahedron volume calculation 
 			return total / 6;
 		}
 		return - m_geom.getMaxDimOfElements();
 	}
 	
 	public int calculateComponents() {
-		PiVector[] neighbours = m_geom.getNeighbours();
+		/*PiVector[] neighbours = m_geom.getNeighbours();
 		boolean[] used = new boolean[neighbours.length];
 		
 		int comp = 0;
@@ -79,6 +94,34 @@ public class Topology extends PjWorkshop {
 		while ((next = getFalse(used)) != -1) {
 			comp++;
 			used = dfs(neighbours, used, next);
+		}
+		
+		return comp;*/
+		
+		// Get neighbour information
+		PiVector[] neighbours = m_geom.getNeighbours();
+		
+		// Track which faces we have visitied
+		boolean[] used = new boolean[neighbours.length];
+		
+		int comp = 0;
+		int next = -1;
+		// As long as we haven't visited every face, find connected components
+		while ((next = getFalse(used)) != -1) {
+			comp++;
+			Stack<Integer> todo = new Stack<Integer>(); 
+			todo.push(next);
+			
+			// Depth First Search
+			while (!todo.isEmpty()) {
+				int x = todo.pop();
+				if (!used[x]) {
+					used[x] = true;
+					for (int index : neighbours[x].getEntries()) {
+						todo.push(index);
+					}
+				}
+			}
 		}
 		
 		return comp;
@@ -98,6 +141,7 @@ public class Topology extends PjWorkshop {
 		return -1;
 	}
 	
+	// No longer used. The non-recursive depth first search is faster.
 	private boolean[] dfs(PiVector[] neighbours, boolean[] used, int next) {
 		used[next] = true;
 		for (int i = 0; i < 3; i++) {
