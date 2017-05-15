@@ -92,8 +92,9 @@ public class Topology_IP extends PjWorkshop_IP implements ActionListener {
 			m_ws.m_geom.update(m_ws.m_geom);
 			return;
 		} else if (source == btnLoops) {
-			lblLoops.setText("...");
+//			lblLoops.setText("pre");
 			lblLoops.setText(m_ws.calculateLoops() + "");
+//			lblLoops.setText("post");
 			m_ws.m_geom.update(m_ws.m_geom);
 			return;
 		}
