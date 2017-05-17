@@ -121,7 +121,8 @@ public class Topology extends PjWorkshop {
 				if (!used[x]) {
 					used[x] = true;
 					for (int index : neighbours[x].getEntries()) {
-						todo.push(index);
+						if (index >= 0)
+							todo.push(index);
 					}
 				}
 			}
