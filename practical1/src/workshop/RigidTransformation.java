@@ -19,11 +19,18 @@ import java.util.List;
 public class RigidTransformation extends PjWorkshop {
 	
 	/** First surface to be registered. */	
-	PgElementSet	m_surfP;	
+	PgElementSet	m_surfP;
+    /** Keeps the a copy of the vertices of P when loaded
+     * This can be used to reset P.
+     */
+    PdVector[] m_surfP_original;
 	/** Second surface to be registered. */
-	PgElementSet	m_surfQ;	
-	
-	
+	PgElementSet	m_surfQ;
+    /** Keeps the a copy of the vertices of Q when loaded
+     * This can be used to reset Q.
+     */
+    PdVector[] m_surfQ_original;
+
 	/** Constructor */
 	public RigidTransformation() {
 		super("Surface Registration");
@@ -41,8 +48,23 @@ public class RigidTransformation extends PjWorkshop {
 	/** Set two Geometries. */
 	public void setGeometries(PgElementSet surfP, PgElementSet surfQ) {
 		m_surfP = surfP;
+        m_surfP_original = PdVector.copyNew(surfP.getVertices());
 		m_surfQ = surfQ;
+        m_surfQ_original = PdVector.copyNew(surfQ.getVertices());
+        System.out.println(String.format("Vertices P:%d vertices Q: %d", surfP.getVertices().length, surfQ.getVertices().length));
 	}
+
+    /**
+     * Resets the two meshes to their initial state when they were loaded in.
+     * No need to call update
+     */
+	public void reset() {
+	    m_surfP.setVertices(m_surfP_original.clone());
+        m_surfP.update(m_surfP);
+
+        m_surfQ.setVertices(m_surfQ_original.clone());
+        m_surfQ.update(m_surfQ);
+    }
 
     /**
      * @param nrVertices The number of vertices to select
@@ -62,7 +84,7 @@ public class RigidTransformation extends PjWorkshop {
 	}
 
     /**
-     * For every entry in the given vertices finds the closest vertice in set Q for it.
+     * For every entry in the given vertices finds the closest vertex in set Q for it.
      */
     public PdVector[] getClosestVertices(PdVector[] vertices) {
         PdVector[] closestVertices = new PdVector[vertices.length];
@@ -73,9 +95,10 @@ public class RigidTransformation extends PjWorkshop {
     }
 
     /**
-     * Finds the closest vertex in the set Q from the given vertex
+     * Finds the closest vertex in the set Q from the given vertex.
      */
     private PdVector findClosestVertices(PdVector vertex) {
+        // Note: this the most expensive function O(n^2)
         PdVector[] vertices = m_surfQ.getVertices();
         PdVector current = vertices[0];
         double smallest = vertex.dist(current);
@@ -124,7 +147,7 @@ public class RigidTransformation extends PjWorkshop {
      * @param k
      * @return a list of size distances and every entry specifies if it should be removed or not
      */
-    public boolean[] getRemoveList(double[] distances, double median, int k) {
+    public boolean[] getRemoveList(double[] distances, double median, double k) {
         double threshold = median * k;
         boolean[] removeList = new boolean[distances.length];
         for(int i = 0; i < distances.length; i++) {
@@ -205,15 +228,15 @@ public class RigidTransformation extends PjWorkshop {
         return PdVector.subNew(centroidQ, optimalRotation.leftMultMatrix(null, centroidP));
     }
 
-    public void rotatePMesh(PdMatrix rotation) {
-        PdVector[] vertices = m_surfP.getVertices();
+    public void rotateMesh(PdMatrix rotation, PgElementSet mesh) {
+        PdVector[] vertices = mesh.getVertices();
         for(int i = 0; i < vertices.length; i++) {
             vertices[i].leftMultMatrix(rotation);
         }
     }
 
-    public void translatePMesh(PdVector translation) {
-        PdVector[] vertices = m_surfP.getVertices();
+    public void translateMesh(PdVector translation, PgElementSet mesh) {
+        PdVector[] vertices = mesh.getVertices();
         for(int i = 0; i < vertices.length; i++) {
             vertices[i].add(translation);
         }
@@ -232,5 +255,25 @@ public class RigidTransformation extends PjWorkshop {
             error += (distance * distance);
         }
         return error / (double)left.length;
+    }
+
+    public void randomRotationQ() {
+        // A rotation of 2 degrees around the axis (1, 1, 1)
+        // If you click enough it would be random
+        PdMatrix rotation = new PdMatrix(new double[][]{
+                {0.8959026, 0.3618392, -0.2577418},
+                {-0.2577418, 0.8959026, 0.3618392},
+                {0.3618392, -0.2577418, 0.8959026}
+        });
+        rotateMesh(rotation, this.m_surfQ);
+    }
+
+    /**
+     * Random translation in x,y,z between - size / 2 and size / 2
+     * @param size The boundaries
+     */
+    public void randomTranslationQ(int size) {
+        PdVector translation = new PdVector(Math.random() * size - size / 2, Math.random() * size - size / 2, Math.random() * size - size / 2);
+        translateMesh(translation, this.m_surfQ);
     }
 }
