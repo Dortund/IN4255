@@ -41,11 +41,11 @@ public class ShapeDeformation_IP extends PjWorkshop_IP implements ActionListener
 
         shapeDeformation = (ShapeDeformation) parent;
 
-        btnCalculate = new Button("Calculate");
-        btnCalculate.addActionListener(this);
+        //btnCalculate = new Button("Calculate");
+        //btnCalculate.addActionListener(this);
 
-        Panel panel = new Panel(new GridLayout(5, 1));
-        panel.add(btnCalculate);
+        Panel panel = new Panel(new GridLayout(3, 1));
+        //panel.add(btnCalculate);
         Panel matrixGrid = new Panel(new GridLayout(3,3));
         NumberFormat format = NumberFormat.getNumberInstance();
         matrixInputs = new JFormattedTextField[3][3];
@@ -59,6 +59,7 @@ public class ShapeDeformation_IP extends PjWorkshop_IP implements ActionListener
         panel.add(matrixGrid);
         
         btnDeform = new Button("Deform");
+        btnDeform.addActionListener(this);
         panel.add(btnDeform);
         
         this.add(panel);
@@ -79,9 +80,9 @@ public class ShapeDeformation_IP extends PjWorkshop_IP implements ActionListener
 
     public void actionPerformed(ActionEvent event) {
         Object source = event.getSource();
-        if(source == btnCalculate) {
+        /*if(source == btnCalculate) {
             testTriangleToGradient();
-        }
+        }*/
         if (source == btnDeform) {
         	deformSelected();
         }
@@ -90,11 +91,12 @@ public class ShapeDeformation_IP extends PjWorkshop_IP implements ActionListener
     private void deformSelected() {
     	PdMatrix deform = new PdMatrix(3, 3);
     	for (int row = 0; row < matrixInputs.length; row++) {
-        	for (int column = 0; row < matrixInputs[row].length; column++) {
+        	for (int column = 0; column < matrixInputs[row].length; column++) {
         		double val = Double.parseDouble(matrixInputs[row][column].getText());
         		deform.setEntry(row, column, val);
         	}
     	}
+    	PsDebug.message("Deform: " + deform);
     	shapeDeformation.deformSelected(deform);
     }
 
