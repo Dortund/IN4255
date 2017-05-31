@@ -38,7 +38,7 @@ public class ShapeDeformation extends PjWorkshop {
     }
     
     private void calculateMatrices() {
-    	matrixG = meshToGradient(m_geom, null);
+    	matrixG = meshToGradient();
     	matrixM = getM();
     	PnSparseMatrix s1 = PnSparseMatrix.multMatrices(matrixM, matrixG, null);
     	PnSparseMatrix s2 = PnSparseMatrix.multMatrices(PnSparseMatrix.transposeNew(matrixG), matrixM, null);
@@ -82,43 +82,59 @@ public class ShapeDeformation extends PjWorkshop {
     }
     
     public void deformSelected(PdMatrix deformMatrix) {
-    	PdVector x = new PdVector();
+    	PdVector x = new PdVector(m_geom.getNumVertices());
+    	PdVector y = new PdVector(m_geom.getNumVertices());
+    	PdVector z = new PdVector(m_geom.getNumVertices());
     	
+    	PdVector[] gTildes = calcGtilde(deformMatrix);
     	
+    	PnSparseMatrix gTranspose = PnSparseMatrix.transposeNew(matrixG);
     	
-    	PdVector b = new PdVector();
+    	PnSparseMatrix rightMatrix = PnSparseMatrix.multMatrices(gTranspose, matrixM, null);
+    	
+    	PdVector rightX = PnSparseMatrix.rightMultVector(rightMatrix, gTildes[0], null);
+    	PdVector rightY = PnSparseMatrix.rightMultVector(rightMatrix, gTildes[1], null);
+    	PdVector rightZ = PnSparseMatrix.rightMultVector(rightMatrix, gTildes[2], null);
     	
     	try {
-			PnMumpsSolver.solve(pointerToFactorization, x, b);
+			PnMumpsSolver.solve(pointerToFactorization, x, rightX);
+			PnMumpsSolver.solve(pointerToFactorization, y, rightY);
+			PnMumpsSolver.solve(pointerToFactorization, z, rightZ);
 		} catch (Exception e) {
 			e.printStackTrace();
 			PsDebug.message("Failed to solve.\n" + e.toString());
 		}
+    	
+    	PdVector[] vertices = m_geom.getVertices();
+    	for (int vIndex = 0; vIndex < m_geom.getNumVertices(); vIndex++) {
+    		PdVector vertex = vertices[vIndex];
+    		vertex.setEntry(0, x.getEntry(vIndex));
+    		vertex.setEntry(1, y.getEntry(vIndex));
+    		vertex.setEntry(2, z.getEntry(vIndex));
+    	}
+    	
+    	
     }
 
     /**
      * Computes matrix G for a triangle mesh (task 1)
      * Where G maps a continuous linear polynomial over all triangles of a mesh to its gradient vectors
      */
-    public PnSparseMatrix meshToGradient(PgElementSet mesh, PdMatrix deform) {
-    	if (mesh == null)
-    		mesh = m_geom;
+    public PnSparseMatrix meshToGradient() {
+    	if (m_geom == null)
+    		return null;
     	
         // 3#T x #V matrix
-        PnSparseMatrix G = new PnSparseMatrix(mesh.getNumElements() * 3, mesh.getNumVertices(), 3);
-        PiVector[] triangles = mesh.getElements();
+        PnSparseMatrix G = new PnSparseMatrix(m_geom.getNumElements() * 3, m_geom.getNumVertices(), 3);
+        PiVector[] triangles = m_geom.getElements();
 
         for(int triangleIdx = 0; triangleIdx < triangles.length; triangleIdx++) {
             PiVector triangle = triangles[triangleIdx];
 
             PdMatrix subGradient = triangleToGradient(new PdVector[]{
-                    mesh.getVertex(triangle.getEntry(0)),
-                    mesh.getVertex(triangle.getEntry(1)),
-                    mesh.getVertex(triangle.getEntry(2))});
-            
-            if (deform != null && triangle.hasTag(PsObject.IS_SELECTED)) {
-            	subGradient.leftMult(deform);
-            }
+            		m_geom.getVertex(triangle.getEntry(0)),
+            		m_geom.getVertex(triangle.getEntry(1)),
+            		m_geom.getVertex(triangle.getEntry(2))});
 
             for(int columnIdx = 0; columnIdx < 3; columnIdx++) {
                 int column = 3 * triangleIdx;
@@ -166,7 +182,12 @@ public class ShapeDeformation extends PjWorkshop {
         return gradient;
     }
 
-    public void calcGtilde() {
+    /**
+     * Calculates the g tilde vectors for x, y and z.
+     * @param deformMatrix
+     * @return
+     */
+    public PdVector[] calcGtilde(PdMatrix deformMatrix) {
         PdVector x = new PdVector();
         PdVector y = new PdVector();
         PdVector z = new PdVector();
@@ -183,6 +204,34 @@ public class ShapeDeformation extends PjWorkshop {
         PdVector zGradient = PnSparseMatrix.rightMultVector(gradientMatrix, z, null);
 
         // multiple with user selected matrix for each selected triangle
-        // .....
+        PiVector[] triangles = m_geom.getElements();
+
+        for(int triangleIdx = 0; triangleIdx < triangles.length; triangleIdx++) {
+        	if (triangles[triangleIdx].hasTag(PsObject.IS_SELECTED)) {
+            	addDeformationMatrix(deformMatrix, xGradient, triangleIdx);
+            	addDeformationMatrix(deformMatrix, yGradient, triangleIdx);
+            	addDeformationMatrix(deformMatrix, zGradient, triangleIdx);
+            }
+        }
+        
+        PdVector[] res = new PdVector[3];
+        res[0] = xGradient;
+        res[1] = yGradient;
+        res[2] = zGradient;
+        
+        return res;
+    }
+    
+    private void addDeformationMatrix(PdMatrix deform, PdVector vector, int index) {
+    	PdVector temp = new PdVector(3);
+    	temp.setEntry(0, vector.getEntry((index*3) + 0));
+    	temp.setEntry(1, vector.getEntry((index*3) + 1));
+    	temp.setEntry(2, vector.getEntry((index*3) + 2));
+    	
+    	temp.leftMultMatrix(deform);
+    	
+    	vector.setEntry((index*3) + 0, temp.getEntry(0));
+    	vector.setEntry((index*3) + 1, temp.getEntry(1));
+    	vector.setEntry((index*3) + 2, temp.getEntry(2));
     }
 }

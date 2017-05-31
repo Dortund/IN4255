@@ -48,31 +48,19 @@ public class ShapeDeformation_IP extends PjWorkshop_IP implements ActionListener
         Panel matrixGrid = new Panel(new GridLayout(3,3));
         NumberFormat format = NumberFormat.getNumberInstance();
         matrixInputs = new JFormattedTextField[3][3];
-        PsDebug.message("asdf");
         for (int row = 0; row < matrixInputs.length; row++) {
-        	for (int column = 0; row < matrixInputs[row].length; column++) {
+        	for (int column = 0; column < matrixInputs[row].length; column++) {
             	matrixInputs[row][column] = new JFormattedTextField(format);
             	matrixInputs[row][column].setText(row == column ? 1+"" : 0+"");
             	matrixGrid.add(matrixInputs[row][column]);
             }
         }
         panel.add(matrixGrid);
-        PsDebug.message("asdf");
-        try {
+        
         btnDeform = new Button("Deform");
-        
-        PsDebug.message("asdf");
-        
         panel.add(btnDeform);
-
-        PsDebug.message("asdf");
         
         this.add(panel);
-        
-        } catch (Exception e) {
-        	PsDebug.message("jkl");
-        	PsDebug.message(e.toString());
-        }
 
         validate();
     }
@@ -124,9 +112,6 @@ public class ShapeDeformation_IP extends PjWorkshop_IP implements ActionListener
 
         PsDebug.message("Expect: " + expectedMatrix.toShortString());
         PsDebug.message("Got: " + shapeDeformation.triangleToGradient(triangle2));
-        
-        
-        PsDebug.message(shapeDeformation.meshToGradient(null, null) + "");
     }
 
     protected int getDialogButtons()		{
