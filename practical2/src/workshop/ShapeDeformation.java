@@ -31,20 +31,19 @@ public class ShapeDeformation extends PjWorkshop {
         m_geomSave 	= (PgElementSet)super.m_geomSave;
     }
     
+    /**
+     * Get the M_v matrix for the current mesh
+     * @return The M_v matrix
+     */
     private PnSparseMatrix getM() {
     	PnSparseMatrix M = new PnSparseMatrix(m_geom.getNumElements() * 3, m_geom.getNumElements() * 3, 1);
     	PiVector[] triangles = m_geom.getElements();
     	for(int triangleIdx = 0; triangleIdx < triangles.length; triangleIdx++) {
             PiVector triangle = triangles[triangleIdx];
             
-            PdVector[] vertices = new PdVector[]{
-            		m_geom.getVertex(triangle.getEntry(0)),
-            		m_geom.getVertex(triangle.getEntry(1)),
-            		m_geom.getVertex(triangle.getEntry(2))};
-            
-            PdVector p1 = vertices[0];
-            PdVector p2 = vertices[1];
-            PdVector p3 = vertices[2];
+            PdVector p1 = m_geom.getVertex(triangle.getEntry(0));
+            PdVector p2 = m_geom.getVertex(triangle.getEntry(1));
+            PdVector p3 = m_geom.getVertex(triangle.getEntry(2));
 
             PdVector V = PdVector.subNew(p2, p1);
             PdVector W = PdVector.subNew(p3, p1);
@@ -71,39 +70,25 @@ public class ShapeDeformation extends PjWorkshop {
     	//s1.add(PnSparseMatrix.multScalar(matrixM, 0.0001));
     	PnSparseMatrix leftHand = PnSparseMatrix.copyNew(s1);
     	
-    	/*long pointerToFactorization = -1;
-    	try {
-    		PsDebug.message("Factorizing");
-    		pointerToFactorization = PnMumpsSolver.factor(s1, PnMumpsSolver.Type.GENERAL_SYMMETRIC);
-		} catch (Exception e) {
-			e.printStackTrace();
-			PsDebug.message("Failed to factorize.\n" + e.toString());
-		}*/
-    	
     	PdVector x = new PdVector(m_geom.getNumVertices());
     	PdVector y = new PdVector(m_geom.getNumVertices());
     	PdVector z = new PdVector(m_geom.getNumVertices());
     	
-    	PsDebug.message("Calculating g tildes");
+    	//PsDebug.message("Calculating g tildes");
     	PdVector[] gTildes = calcGtilde(deformMatrix, matrixG);
     	
-    	PsDebug.message("Calculating Matrix part of right hand");
+    	//PsDebug.message("Calculating Matrix part of right hand");
     	PnSparseMatrix rightMatrix = PnSparseMatrix.multMatrices(MatrixGTranspose, matrixM, null);
     	
-    	PsDebug.message("Calculating final right hand values");
+    	//PsDebug.message("Calculating final right hand values");
     	PdVector rightX = PnSparseMatrix.rightMultVector(rightMatrix, gTildes[0], null);
     	PdVector rightY = PnSparseMatrix.rightMultVector(rightMatrix, gTildes[1], null);
     	PdVector rightZ = PnSparseMatrix.rightMultVector(rightMatrix, gTildes[2], null);
-    	
-    	
-    	
-    	PsDebug.message("Solving linear problems");
+
+    	//PsDebug.message("Solving linear problems");
     	try {
-    		/*if (pointerToFactorization == -1) {
-	    		PsDebug.warning("No pointer to factorization found");
-	    		return;
-	    	}
-    		
+    		/*
+    		long pointerToFactorization = PnMumpsSolver.factor(s1, PnMumpsSolver.Type.GENERAL_SYMMETRIC);
 			PnMumpsSolver.solve(pointerToFactorization, x, rightX);
 			PnMumpsSolver.solve(pointerToFactorization, y, rightY);
 			PnMumpsSolver.solve(pointerToFactorization, z, rightZ);*/
@@ -122,14 +107,9 @@ public class ShapeDeformation extends PjWorkshop {
 			PsDebug.message("Failed to solve.\n" + e.toString());
 		}
     	
-    	/*PdVector vx = PnSparseMatrix.rightMultVector(leftHand, x, null);
-    	
-    	for (int vIndex = 0; vIndex < m_geom.getNumVertices(); vIndex++) {
-    		PsDebug.message((vx.getEntry(vIndex) - rightX.getEntry(vIndex)) + " || " + m_geom.getVertex(vIndex).getEntry(0) + ", " + x.getEntry(vIndex));
-    	}*/
-    	
     	PdVector[] vertices = m_geom.getVertices();
     	
+    	// Calculate the old and new mean
     	PdVector sumOld = new PdVector(3);
     	PdVector sumNew = new PdVector(3);
     	for (int vIndex = 0; vIndex < m_geom.getNumVertices(); vIndex++) {
@@ -143,26 +123,11 @@ public class ShapeDeformation extends PjWorkshop {
     	sumOld.multScalar(1.0 / m_geom.getNumVertices());
     	sumNew.multScalar(1.0 / m_geom.getNumVertices());
     	
+    	// Get the translation from the new mean to the old mean
     	PdVector translationMean = PdVector.subNew(sumOld, sumNew);
     	
-    	PsDebug.message("Setting new vertex coordinates");
+    	//PsDebug.message("Setting new vertex coordinates");
     	for (int vIndex = 0; vIndex < m_geom.getNumVertices(); vIndex++) {
-    		/*PdVector vertex = vertices[vIndex];
-    		//vertex.setEntry(0, x.getEntry(vIndex));
-    		//vertex.setEntry(1, y.getEntry(vIndex));
-    		//vertex.setEntry(2, z.getEntry(vIndex));
-    		//PsDebug.message(vertex.getEntry(0) + " -> " + x.getEntry(vIndex));
-    		PsDebug.message((vertex.getEntry(0) - x.getEntry(vIndex)) + " , " + (vertex.getEntry(1) - y.getEntry(vIndex)) + " , " + (vertex.getEntry(2) - z.getEntry(vIndex)));
-    		
-    		PdVector translation = new PdVector(3);
-    		translation.setEntry(0, x.getEntry(vIndex) - vertex.getEntry(0));
-    		translation.setEntry(1, y.getEntry(vIndex) - vertex.getEntry(1));
-    		translation.setEntry(2, z.getEntry(vIndex) - vertex.getEntry(2));
-    		translation.add(translationMean);
-    		
-    		//PsDebug.message(translation + "");
-    		
-    		vertex.add(translation);*/
     		PdVector newV = new PdVector(3);
     		newV.setEntry(0, x.getEntry(vIndex));
     		newV.setEntry(1, y.getEntry(vIndex));
@@ -244,10 +209,13 @@ public class ShapeDeformation extends PjWorkshop {
 
     /**
      * Calculates the g tilde vectors for x, y and z.
-     * @param deformMatrix
-     * @return
+     * @param deformMatrix The deformation matrix
+     * @param matrixG The gradient matrix
+     * @return A vector of size 3 containing in this order: G*x, G*y, G*z 
      */
     public PdVector[] calcGtilde(PdMatrix deformMatrix, PnSparseMatrix matrixG) {
+    	
+    	// Get the current x/y/z values
         PdVector x = new PdVector(m_geom.getNumVertices());
         PdVector y = new PdVector(m_geom.getNumVertices());
         PdVector z = new PdVector(m_geom.getNumVertices());
@@ -255,27 +223,25 @@ public class ShapeDeformation extends PjWorkshop {
             x.setEntry(i, m_geom.getVertex(i).getEntry(0));
             y.setEntry(i, m_geom.getVertex(i).getEntry(1));
             z.setEntry(i, m_geom.getVertex(i).getEntry(2));
-            
-            //PsDebug.message(x.getEntry(i) + ", " + y.getEntry(i) + ", " + z.getEntry(i));
         }
-
-        PnSparseMatrix gradientMatrix = PnSparseMatrix.copyNew(matrixG);
-
-        PdVector xGradient = PnSparseMatrix.rightMultVector(gradientMatrix, x, null);
-        PdVector yGradient = PnSparseMatrix.rightMultVector(gradientMatrix, y, null);
-        PdVector zGradient = PnSparseMatrix.rightMultVector(gradientMatrix, z, null);
+        
+        // Calculate G*x/y/z
+        PdVector xGradient = PnSparseMatrix.rightMultVector(matrixG, x, null);
+        PdVector yGradient = PnSparseMatrix.rightMultVector(matrixG, y, null);
+        PdVector zGradient = PnSparseMatrix.rightMultVector(matrixG, z, null);
 
         // multiple with user selected matrix for each selected triangle
         PiVector[] triangles = m_geom.getElements();
         for(int triangleIdx = 0; triangleIdx < triangles.length; triangleIdx++) {
         	if (triangles[triangleIdx].hasTag(PsObject.IS_SELECTED)) {
-        		PsDebug.message("Updating: " + triangleIdx);
+        		//PsDebug.message("Updating: " + triangleIdx);
             	addDeformationMatrix(deformMatrix, xGradient, triangleIdx);
             	addDeformationMatrix(deformMatrix, yGradient, triangleIdx);
             	addDeformationMatrix(deformMatrix, zGradient, triangleIdx);
             }
         }
         
+        // Combine results
         PdVector[] res = new PdVector[3];
         res[0] = xGradient;
         res[1] = yGradient;
@@ -284,6 +250,12 @@ public class ShapeDeformation extends PjWorkshop {
         return res;
     }
     
+    /**
+     * Update the G*x/y/z matrix inline with the specified deformation matrix
+     * @param deform The deformation matrix
+     * @param vector The G*x/y/z vector
+     * @param index Index of the face that needs to be transformed
+     */
     private void addDeformationMatrix(PdMatrix deform, PdVector vector, int index) {
     	PdVector temp = new PdVector(3);
     	temp.setEntry(0, vector.getEntry((index*3) + 0));
@@ -297,6 +269,9 @@ public class ShapeDeformation extends PjWorkshop {
     	vector.setEntry((index*3) + 2, temp.getEntry(2));
     }
     
+    /**
+     * Reset the geometry to its standard shape
+     */
     public void reset() {
     	m_geom.setVertices(m_geomSave.getVertices().clone());
     	m_geom.update(m_geom);

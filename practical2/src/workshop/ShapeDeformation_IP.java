@@ -42,11 +42,7 @@ public class ShapeDeformation_IP extends PjWorkshop_IP implements ActionListener
 
         shapeDeformation = (ShapeDeformation) parent;
 
-        //btnCalculate = new Button("Calculate");
-        //btnCalculate.addActionListener(this);
-
         Panel panel = new Panel(new GridLayout(3, 1));
-        //panel.add(btnCalculate);
         Panel matrixGrid = new Panel(new GridLayout(3,3));
         NumberFormat format = NumberFormat.getNumberInstance();
         matrixInputs = new JFormattedTextField[3][3];
