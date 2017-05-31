@@ -176,7 +176,7 @@ public class ShapeDeformation extends PjWorkshop {
             z.setEntry(i, m_geom.getVertex(i).getEntry(2));
         }
 
-        PnSparseMatrix gradientMatrix = meshToGradient(m_geom);
+        PnSparseMatrix gradientMatrix = PnSparseMatrix.copyNew(matrixG);
 
         PdVector xGradient = PnSparseMatrix.rightMultVector(gradientMatrix, x, null);
         PdVector yGradient = PnSparseMatrix.rightMultVector(gradientMatrix, y, null);
