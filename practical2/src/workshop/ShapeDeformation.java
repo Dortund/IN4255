@@ -46,11 +46,11 @@ public class ShapeDeformation extends PjWorkshop {
                     mesh.getVertex(triangle.getEntry(2))});
 
             for(int columnIdx = 0; columnIdx < 3; columnIdx++) {
-                int column = 3 * triangleIdx + columnIdx;
+                int column = 3 * triangleIdx;
 
-                G.addEntry(column, triangle.getEntry(0), subGradient.getEntry(columnIdx, 0));
-                G.addEntry(column, triangle.getEntry(1), subGradient.getEntry(columnIdx, 1));
-                G.addEntry(column, triangle.getEntry(2), subGradient.getEntry(columnIdx, 2));
+                G.addEntry(column, triangle.getEntry(columnIdx), subGradient.getColumn(columnIdx).getEntry(0));
+                G.addEntry(column + 1, triangle.getEntry(columnIdx), subGradient.getColumn(columnIdx).getEntry(1));
+                G.addEntry(column + 2, triangle.getEntry(columnIdx), subGradient.getColumn(columnIdx).getEntry(2));
             }
         }
 
@@ -74,11 +74,7 @@ public class ShapeDeformation extends PjWorkshop {
         double area = PdVector.crossNew(V, W).length() * 0.5;
 
         // Calculate the normal
-        double Nx = V.getEntry(1) * W.getEntry(2) - V.getEntry(2) * W.getEntry(1);
-        double Ny = V.getEntry(2) * W.getEntry(0) - V.getEntry(0) * W.getEntry(2);
-        double Nz = V.getEntry(0) * W.getEntry(1) - V.getEntry(1) * W.getEntry(0);
-
-        PdVector normal = new PdVector(Nx, Ny, Nz);
+        PdVector normal = PdVector.crossNew(V, W);
         normal.normalize();
 
         PdVector e1 = PdVector.subNew(p3, p2);
@@ -93,5 +89,25 @@ public class ShapeDeformation extends PjWorkshop {
         gradient.multScalar(1.0 / (area * 2));
 
         return gradient;
+    }
+
+    public void calcGtilde() {
+        PdVector x = new PdVector();
+        PdVector y = new PdVector();
+        PdVector z = new PdVector();
+        for(int i = 0; i < m_geom.getNumElements(); i++) {
+            x.setEntry(i, m_geom.getVertex(i).getEntry(0));
+            y.setEntry(i, m_geom.getVertex(i).getEntry(1));
+            z.setEntry(i, m_geom.getVertex(i).getEntry(2));
+        }
+
+        PnSparseMatrix gradientMatrix = meshToGradient(m_geom);
+
+        PdVector xGradient = PnSparseMatrix.rightMultVector(gradientMatrix, x, null);
+        PdVector yGradient = PnSparseMatrix.rightMultVector(gradientMatrix, y, null);
+        PdVector zGradient = PnSparseMatrix.rightMultVector(gradientMatrix, z, null);
+
+        // multiple with user selected matrix for each selected triangle
+        // .....
     }
 }
