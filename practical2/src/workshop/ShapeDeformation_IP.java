@@ -36,6 +36,7 @@ public class ShapeDeformation_IP extends PjWorkshop_IP implements ActionListener
     }
 
     public void setParent(PsUpdateIf parent) {
+    	try {
         super.setParent(parent);
 
         shapeDeformation = (ShapeDeformation) parent;
@@ -50,7 +51,7 @@ public class ShapeDeformation_IP extends PjWorkshop_IP implements ActionListener
         matrixInputs = new JFormattedTextField[3][3];
         PsDebug.message("asdf");
         for (int row = 0; row < matrixInputs.length; row++) {
-        	for (int column = 0; row < matrixInputs[row].length; column++) {
+        	for (int column = 0; column < matrixInputs[row].length; column++) {
             	matrixInputs[row][column] = new JFormattedTextField(format);
             	matrixInputs[row][column].setText(row == column ? 1+"" : 0+"");
             	matrixGrid.add(matrixInputs[row][column]);
@@ -75,6 +76,12 @@ public class ShapeDeformation_IP extends PjWorkshop_IP implements ActionListener
         }
 
         validate();
+    	} catch(Exception E){
+			StackTraceElement[] stacktrace = E.getStackTrace();
+			for (StackTraceElement elem : stacktrace)
+				PsDebug.message(elem.toString());
+			PsDebug.warning(E.toString());
+		}
     }
 
     public void init() {
