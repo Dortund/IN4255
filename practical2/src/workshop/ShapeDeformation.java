@@ -65,7 +65,7 @@ public class ShapeDeformation extends PjWorkshop {
         PnSparseMatrix MatrixGTranspose = PnSparseMatrix.transposeNew(matrixG);
         PnSparseMatrix matrixM = getM();
         
-        PsDebug.message("Calculating left hand");
+        PsDebug.warning("Calculating left hand");
     	PnSparseMatrix s1 = PnSparseMatrix.multMatrices(MatrixGTranspose, PnSparseMatrix.multMatrices(matrixM, matrixG, null), null);
     	//s1.add(PnSparseMatrix.multScalar(matrixM, 0.0001));
     	PnSparseMatrix leftHand = PnSparseMatrix.copyNew(s1);
@@ -74,18 +74,18 @@ public class ShapeDeformation extends PjWorkshop {
     	PdVector y = new PdVector(m_geom.getNumVertices());
     	PdVector z = new PdVector(m_geom.getNumVertices());
     	
-    	//PsDebug.message("Calculating g tildes");
+    	PsDebug.warning("Calculating g tildes");
     	PdVector[] gTildes = calcGtilde(deformMatrix, matrixG);
     	
-    	//PsDebug.message("Calculating Matrix part of right hand");
+    	PsDebug.warning("Calculating Matrix part of right hand");
     	PnSparseMatrix rightMatrix = PnSparseMatrix.multMatrices(MatrixGTranspose, matrixM, null);
     	
-    	//PsDebug.message("Calculating final right hand values");
+    	PsDebug.warning("Calculating final right hand values");
     	PdVector rightX = PnSparseMatrix.rightMultVector(rightMatrix, gTildes[0], null);
     	PdVector rightY = PnSparseMatrix.rightMultVector(rightMatrix, gTildes[1], null);
     	PdVector rightZ = PnSparseMatrix.rightMultVector(rightMatrix, gTildes[2], null);
 
-    	//PsDebug.message("Solving linear problems");
+    	PsDebug.warning("Solving linear problems");
     	try {
     		/*
     		long pointerToFactorization = PnMumpsSolver.factor(s1, PnMumpsSolver.Type.GENERAL_SYMMETRIC);
@@ -106,10 +106,12 @@ public class ShapeDeformation extends PjWorkshop {
 			e.printStackTrace();
 			PsDebug.message("Failed to solve.\n" + e.toString());
 		}
+    	PsDebug.warning("Linear problems solved");
     	
     	PdVector[] vertices = m_geom.getVertices();
     	
     	// Calculate the old and new mean
+    	PsDebug.warning("Calculating difference in mean");
     	PdVector sumOld = new PdVector(3);
     	PdVector sumNew = new PdVector(3);
     	for (int vIndex = 0; vIndex < m_geom.getNumVertices(); vIndex++) {
@@ -126,7 +128,7 @@ public class ShapeDeformation extends PjWorkshop {
     	// Get the translation from the new mean to the old mean
     	PdVector translationMean = PdVector.subNew(sumOld, sumNew);
     	
-    	//PsDebug.message("Setting new vertex coordinates");
+    	PsDebug.warning("Setting new vertex coordinates");
     	for (int vIndex = 0; vIndex < m_geom.getNumVertices(); vIndex++) {
     		PdVector newV = new PdVector(3);
     		newV.setEntry(0, x.getEntry(vIndex));
@@ -234,7 +236,6 @@ public class ShapeDeformation extends PjWorkshop {
         PiVector[] triangles = m_geom.getElements();
         for(int triangleIdx = 0; triangleIdx < triangles.length; triangleIdx++) {
         	if (triangles[triangleIdx].hasTag(PsObject.IS_SELECTED)) {
-        		//PsDebug.message("Updating: " + triangleIdx);
             	addDeformationMatrix(deformMatrix, xGradient, triangleIdx);
             	addDeformationMatrix(deformMatrix, yGradient, triangleIdx);
             	addDeformationMatrix(deformMatrix, zGradient, triangleIdx);
