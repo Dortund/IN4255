@@ -1,7 +1,5 @@
 package workshop;
 
-import dev6.numeric.PnMumpsSolver;
-import dev6.numeric.PnMumpsSolver.Type;
 import jv.geom.PgElementSet;
 import jv.object.PsDebug;
 import jv.object.PsObject;
@@ -297,5 +295,10 @@ public class ShapeDeformation extends PjWorkshop {
     	vector.setEntry((index*3) + 0, temp.getEntry(0));
     	vector.setEntry((index*3) + 1, temp.getEntry(1));
     	vector.setEntry((index*3) + 2, temp.getEntry(2));
+    }
+    
+    public void reset() {
+    	m_geom.setVertices(m_geomSave.getVertices().clone());
+    	m_geom.update(m_geom);
     }
 }

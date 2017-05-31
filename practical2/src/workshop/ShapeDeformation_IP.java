@@ -19,11 +19,12 @@ import jvx.project.PjWorkshop_IP;
 public class ShapeDeformation_IP extends PjWorkshop_IP implements ActionListener {
     protected ShapeDeformation shapeDeformation;
 
-    protected Button btnCalculate;
+    //protected Button btnCalculate;
     
     protected JFormattedTextField[][] matrixInputs;
     
     protected Button btnDeform;
+    protected Button btnReset;
 
     public ShapeDeformation_IP () {
         super();
@@ -62,6 +63,10 @@ public class ShapeDeformation_IP extends PjWorkshop_IP implements ActionListener
         btnDeform.addActionListener(this);
         panel.add(btnDeform);
         
+        btnReset = new Button("Reset");
+        btnReset.addActionListener(this);
+        panel.add(btnReset);
+        
         this.add(panel);
 
         validate();
@@ -80,11 +85,10 @@ public class ShapeDeformation_IP extends PjWorkshop_IP implements ActionListener
 
     public void actionPerformed(ActionEvent event) {
         Object source = event.getSource();
-        /*if(source == btnCalculate) {
-            testTriangleToGradient();
-        }*/
         if (source == btnDeform) {
         	deformSelected();
+        } else if (source == btnReset) {
+        	shapeDeformation.reset();
         }
     }
     
