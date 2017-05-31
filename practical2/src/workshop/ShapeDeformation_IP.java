@@ -36,6 +36,7 @@ public class ShapeDeformation_IP extends PjWorkshop_IP implements ActionListener
     }
 
     public void setParent(PsUpdateIf parent) {
+    	try {
         super.setParent(parent);
 
         shapeDeformation = (ShapeDeformation) parent;
@@ -63,6 +64,12 @@ public class ShapeDeformation_IP extends PjWorkshop_IP implements ActionListener
         this.add(panel);
 
         validate();
+    	} catch(Exception E){
+			StackTraceElement[] stacktrace = E.getStackTrace();
+			for (StackTraceElement elem : stacktrace)
+				PsDebug.message(elem.toString());
+			PsDebug.warning(E.toString());
+		}
     }
 
     public void init() {
