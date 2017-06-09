@@ -1,10 +1,8 @@
 package workshop;
 
-import java.awt.BorderLayout;
 import java.awt.Button;
 import java.awt.Dimension;
 import java.awt.GridLayout;
-import java.awt.Label;
 import java.awt.List;
 import java.awt.Panel;
 import java.awt.event.ActionEvent;
@@ -14,14 +12,9 @@ import java.util.Vector;
 
 import javax.swing.JFormattedTextField;
 
-import jv.geom.PgElementSet;
 import jv.object.PsDebug;
 import jv.object.PsDialog;
 import jv.object.PsUpdateIf;
-import jv.objectGui.PsList;
-import jv.project.PgGeometryIf;
-import jv.project.PvGeometryIf;
-import jv.viewer.PvDisplay;
 import jvx.project.PjWorkshop_IP;
 
 public class SurfaceSmoothing_IP  extends PjWorkshop_IP implements ActionListener{
