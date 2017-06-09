@@ -13,6 +13,7 @@ import workshop.Registration;
 import workshop.RigidTransformation;
 import workshop.Topology;
 import workshop.ShapeDeformation;
+import workshop.SurfaceSmoothing;
 
 public class PgElementSet_Menu extends PgPointSet_Menu {
 	
@@ -21,7 +22,8 @@ public class PgElementSet_Menu extends PgPointSet_Menu {
 		Registration		("Surface Registration..."),
 		Topology			("Topology..."),
 		RigidTransformation ("Rigid transformation..."),
-		ShapeDeformation 	("Shape deformation...")
+		ShapeDeformation 	("Shape deformation..."),
+		SurfaceSmoothing	("Surface Smoothing...")
 		// Additional entries...
 		;
 		protected final String name;
@@ -127,6 +129,18 @@ public class PgElementSet_Menu extends PgPointSet_Menu {
 				dialog = new PjWorkshop_Dialog(false);
 				dialog.setParent(shapeDeformation);
 				dialog.update(shapeDeformation);
+				dialog.setVisible(true);
+				break;
+			case SurfaceSmoothing:
+				SurfaceSmoothing surfaceSmoothing = new SurfaceSmoothing();
+				surfaceSmoothing.setGeometry(m_elementSet);
+				if (currDisp == null) {
+					if (PsDebug.WARNING) PsDebug.warning("missing display.");
+				} else
+					surfaceSmoothing.setDisplay(currDisp);
+				dialog = new PjWorkshop_Dialog(false);
+				dialog.setParent(surfaceSmoothing);
+				dialog.update(surfaceSmoothing);
 				dialog.setVisible(true);
 				break;
 		}

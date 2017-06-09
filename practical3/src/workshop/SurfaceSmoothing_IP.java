@@ -74,6 +74,8 @@ public class SurfaceSmoothing_IP  extends PjWorkshop_IP implements ActionListene
 			btnReset = new Button("Reset");
 	        btnReset.addActionListener(this);
 	        panel.add(btnReset);
+	        
+	        this.add(panel);
 			
 			validate();
 		} catch(Exception E){
