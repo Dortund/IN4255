@@ -19,6 +19,7 @@ public class SurfaceSmoothing_IP  extends PjWorkshop_IP implements ActionListene
 	protected workshop.SurfaceSmoothing surfaceSmoothing;
 
 	protected JFormattedTextField fieldStepsize;
+	protected JFormattedTextField fieldNumSteps;
     protected Button btnIterative;
 	protected Button btnExplicit;
 	protected Button btnImplicit;
@@ -46,13 +47,21 @@ public class SurfaceSmoothing_IP  extends PjWorkshop_IP implements ActionListene
 			super.setParent(parent);
 			surfaceSmoothing = (SurfaceSmoothing) parent;
 			
-			addSubTitle("Set stepsize for smoothing");
-			
-			Panel panel = new Panel(new GridLayout(5, 1));
+			Panel panel = new Panel(new GridLayout(8, 1));
 			
 			NumberFormat format = NumberFormat.getNumberInstance();
+			
+			Label labelStepsize = new Label("Set stepsize for smoothing");
+			panel.add(labelStepsize);
 			fieldStepsize = new JFormattedTextField(format);
+			fieldStepsize.setValue(0.5);
 			panel.add(fieldStepsize);
+			
+			Label labelNumSteps = new Label("Set number of steps");
+			panel.add(labelNumSteps);
+			fieldNumSteps = new JFormattedTextField(format);
+			fieldNumSteps.setValue(1);
+			panel.add(fieldNumSteps);
 			
 			btnIterative = new Button("Iterative Smoothing");
 			btnIterative.addActionListener(this);
@@ -97,19 +106,29 @@ public class SurfaceSmoothing_IP  extends PjWorkshop_IP implements ActionListene
 	 * Handle action events fired by buttons etc.
 	 */
 	public void actionPerformed(ActionEvent event) {
-		Object source = event.getSource();
-		if (source == btnReset){
-			surfaceSmoothing.reset();
-		} else {
-			double stepsize = Double.parseDouble(fieldStepsize.getText());
-			PsDebug.message("Stepsize: " + stepsize);
-			if(source == btnIterative){
-				surfaceSmoothing.iterative(stepsize);
-			} else if (source == btnExplicit){
-				surfaceSmoothing.explicit(stepsize);
-			} else if (source == btnImplicit){
-				surfaceSmoothing.implicit(stepsize);
+		try{
+			Object source = event.getSource();
+			if (source == btnReset){
+				surfaceSmoothing.reset();
+			} else {
+				double stepsize = Double.parseDouble(fieldStepsize.getText());
+				int numSteps = Integer.parseInt(fieldNumSteps.getText());
+	//			PsDebug.message("Stepsize: " + stepsize);
+				for (int i = 0; i < numSteps; i++){
+					if(source == btnIterative){
+						surfaceSmoothing.iterative(stepsize);
+					} else if (source == btnExplicit){
+						surfaceSmoothing.explicit(stepsize);
+					} else if (source == btnImplicit){
+						surfaceSmoothing.implicit(stepsize);
+					}
+				}
 			}
+		} catch(Exception E){
+			StackTraceElement[] stacktrace = E.getStackTrace();
+			for (StackTraceElement elem : stacktrace)
+				PsDebug.message(elem.toString());
+			PsDebug.warning(E.toString());
 		}
 	}
 

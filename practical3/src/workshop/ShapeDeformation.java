@@ -31,7 +31,7 @@ public class ShapeDeformation extends PjWorkshop {
 
     @Override
     public void setGeometry(PgGeometry geom) {
-        PsDebug.message("geometry updated");
+//        PsDebug.message("geometry updated");
         super.setGeometry(geom);
         m_geom 		= (PgElementSet)super.m_geom;
         m_geomSave 	= (PgElementSet)super.m_geomSave;
