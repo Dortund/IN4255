@@ -1,21 +1,16 @@
 package workshop;
 
-import java.awt.Button;
-import java.awt.Dimension;
-import java.awt.GridLayout;
-import java.awt.List;
-import java.awt.Panel;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.text.NumberFormat;
-import java.util.Vector;
-
-import javax.swing.JFormattedTextField;
-
 import jv.object.PsDebug;
 import jv.object.PsDialog;
 import jv.object.PsUpdateIf;
 import jvx.project.PjWorkshop_IP;
+
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.text.NumberFormat;
+import java.util.Vector;
 
 public class SurfaceSmoothing_IP  extends PjWorkshop_IP implements ActionListener{
 	protected	List			m_listActive;
@@ -88,7 +83,7 @@ public class SurfaceSmoothing_IP  extends PjWorkshop_IP implements ActionListene
 
 	@Override
 	public Dimension getDialogSize() {
-		return new Dimension(600, 700);
+		return new Dimension(300, 350);
 	}
 		
 	/** Initialisation */
@@ -107,6 +102,7 @@ public class SurfaceSmoothing_IP  extends PjWorkshop_IP implements ActionListene
 			surfaceSmoothing.reset();
 		} else {
 			double stepsize = Double.parseDouble(fieldStepsize.getText());
+			PsDebug.message("Stepsize: " + stepsize);
 			if(source == btnIterative){
 				surfaceSmoothing.iterative(stepsize);
 			} else if (source == btnExplicit){
