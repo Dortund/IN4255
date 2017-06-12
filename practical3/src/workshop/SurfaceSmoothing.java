@@ -17,11 +17,6 @@ public class SurfaceSmoothing extends ShapeDeformation {
 			init();
 		}
 	}
-	
-	/** Initialisation */
-	public void init() {
-		super.init();
-	}
 
 	public void iterative(double stepsize) {
 		int numVertices = m_geom.getNumVertices();
@@ -99,6 +94,7 @@ public class SurfaceSmoothing extends ShapeDeformation {
 		}
 
 		PsDebug.message("Calculating new x,y,z");
+		// x = x - tLx, y = y - tLy, z = z - tLz
 		PdVector Lx = PnSparseMatrix.rightMultVector(matrixLaplacian, x, null);
 		PdVector Ly = PnSparseMatrix.rightMultVector(matrixLaplacian, y, null);
 		PdVector Lz = PnSparseMatrix.rightMultVector(matrixLaplacian, z, null);
@@ -131,13 +127,15 @@ public class SurfaceSmoothing extends ShapeDeformation {
 		PnSparseMatrix matrixG = meshToGradient();
 		PnSparseMatrix MatrixGTranspose = PnSparseMatrix.transposeNew(matrixG);
 		PnSparseMatrix matrixMv = getMv();
-
-		PnSparseMatrix s1 = PnSparseMatrix.multMatrices(MatrixGTranspose, PnSparseMatrix.multMatrices(matrixMv, matrixG, null), null);
 		PnSparseMatrix matrixM = getM();
 
-		PnSparseMatrix MtS = PnSparseMatrix.copyNew(s1);
+		// Gt * Mv
+		PnSparseMatrix GTMv = PnSparseMatrix.multMatrices(MatrixGTranspose, matrixMv, null);
+		// Gt * Mv * G = S
+		PnSparseMatrix MtS = PnSparseMatrix.multMatrices(GTMv, matrixG, null);
 
 		MtS.multScalar(tau);
+		// (M + tS)
 		MtS.add(matrixM);
 
 		// Get the current x/y/z values
@@ -158,6 +156,7 @@ public class SurfaceSmoothing extends ShapeDeformation {
 
 		PsDebug.message("Solving linear problems");
 		try {
+			// solve (M + tS)x~ = Mx for unknown x~
 			PnBiconjugateGradient solver = new PnBiconjugateGradient();
 
 			solver.solve(MtS, x, Mx);
@@ -167,8 +166,10 @@ public class SurfaceSmoothing extends ShapeDeformation {
 			e.printStackTrace();
 			PsDebug.message("Failed to solve.\n" + e.toString());
 		}
+
 		PsDebug.message("Linear problems solved");
 
+		PsDebug.message("Updating mesh");
 		for (int vIndex = 0; vIndex < m_geom.getNumVertices(); vIndex++) {
 			PdVector newV = new PdVector(3);
 			newV.setEntry(0, x.getEntry(vIndex));
@@ -179,23 +180,41 @@ public class SurfaceSmoothing extends ShapeDeformation {
 		}
 
 		m_geom.update(m_geom);
-
+		PsDebug.message("Updated mesh");
 	}
 
 	private PnSparseMatrix getM() {
 		PnSparseMatrix M = new PnSparseMatrix(m_geom.getNumVertices(), m_geom.getNumVertices(), 1);
 		PiVector[] triangles = m_geom.getElements();
+
 		for (int triangleIdx = 0; triangleIdx < triangles.length; triangleIdx++) {
 			PiVector triangle = triangles[triangleIdx];
-			double area = calcArea(triangle);
+			double area = calcArea(triangle) / 3d;
+			int[] vertices = m_geom.getElement(triangleIdx).m_data;
+			M.setEntry(vertices[0], vertices[0], M.getEntry(vertices[0], vertices[0]) + area);
+			M.setEntry(vertices[1], vertices[1], M.getEntry(vertices[1], vertices[1]) + area);
+			M.setEntry(vertices[2], vertices[2], M.getEntry(vertices[2], vertices[2]) + area);
+		}
 
-			// diagnal entry is sum of 1/3 of each triangle for i-th vertex
-			for(int i = 0; i < 3; i++) {
-				int vIdx = triangle.getEntry(i);
-				double areaV = (area/3.0) + M.getEntry(vIdx,vIdx);
-				M.setEntry(vIdx,vIdx,areaV);
+		double max = Double.MIN_VALUE;
+		double min = Double.MAX_VALUE;
+		for(int i = 0; i < m_geom.getNumVertices();i++) {
+			double value = M.getEntry(i,i);
+			if(max < value) {
+				max = value;
+			} else if(min > value) {
+				min = value;
 			}
 		}
+
+		// Small improvement for meshes which are between -1 and 1 in 3d space
+		// Mass matrix influences the pull of the stiffness matrix
+		// So if the mass matrix is smaller than 1 it will shrink it to infinity when doing implicit euler
+		// And it will explode with explicit euler
+		if (max < 0.5d) {
+			M.multScalar(1d / (max + min));
+		}
+
 		return M;
 	}
 
@@ -207,9 +226,6 @@ public class SurfaceSmoothing extends ShapeDeformation {
 		PnSparseMatrix MatrixGTranspose = PnSparseMatrix.transposeNew(matrixG);
 		PnSparseMatrix matrixMv = getMv();
 
-		PnSparseMatrix s1 = PnSparseMatrix.multMatrices(MatrixGTranspose, PnSparseMatrix.multMatrices(matrixMv, matrixG, null), null);
-		PnSparseMatrix S = PnSparseMatrix.copyNew(s1);
-
 		PsDebug.message("Calculating inverse M");
 		PnSparseMatrix matrixM = getM();
 		PnSparseMatrix matrixMInverse = new PnSparseMatrix(matrixM.getNumRows(), matrixM.getNumRows(),1);
@@ -217,6 +233,12 @@ public class SurfaceSmoothing extends ShapeDeformation {
 			matrixMInverse.setEntry(i,i, 1.0 / matrixM.getEntry(i,i));
 		}
 
-		return PnSparseMatrix.multMatrices(matrixMInverse, S, null);
+		// L = (M^-1) * S = (M^-1) * Gt * Mv * G
+		return PnSparseMatrix.multMatrices(matrixMInverse,
+				PnSparseMatrix.multMatrices(
+					MatrixGTranspose,
+					PnSparseMatrix.multMatrices(
+							matrixMv,
+							matrixG, null), null), null);
 	}
 }
