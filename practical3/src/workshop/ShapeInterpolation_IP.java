@@ -12,6 +12,7 @@ import java.awt.event.ActionListener;
 import java.util.Vector;
 
 import jv.geom.PgElementSet;
+import jv.object.PsDebug;
 import jv.object.PsDialog;
 import jv.object.PsUpdateIf;
 import jv.objectGui.PsList;
@@ -143,6 +144,16 @@ public class ShapeInterpolation_IP  extends PjWorkshop_IP implements ActionListe
 		if (source == m_bSetSurfaces) {
 			m_interpolation.setGeometries((PgElementSet)m_geomList.elementAt(m_listActive.getSelectedIndex()),
 			(PgElementSet)m_geomList.elementAt(m_listPassive.getSelectedIndex()));
+		} else if (source == btnTransform) {
+			PsDebug.warning("going to work");
+			PgElementSet set = m_interpolation.getInterpolatedset(0.5);//m_interpolation.interpolate(0.5);
+			PsDebug.warning("Got a new set. faces: " + set.getNumElements());
+			Vector displays = m_interpolation.getGeometry().getDisplayList();
+			int numDisplays = displays.size();
+			for (int i=0; i<numDisplays; i++) {
+				PvDisplay disp =((PvDisplay)displays.elementAt(i));
+				disp.addGeometry(set);
+			}
 		}
 	}
 
