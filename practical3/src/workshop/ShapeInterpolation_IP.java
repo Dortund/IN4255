@@ -9,7 +9,13 @@ import java.awt.List;
 import java.awt.Panel;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.util.Hashtable;
 import java.util.Vector;
+
+import javax.swing.JLabel;
+import javax.swing.JSlider;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 
 import jv.geom.PgElementSet;
 import jv.object.PsDebug;
@@ -31,6 +37,10 @@ public class ShapeInterpolation_IP  extends PjWorkshop_IP implements ActionListe
     protected Button btnTestConfig;
 	protected Button btnTransform;
     protected Button btnReset;
+    
+    protected JSlider slider;
+    
+    protected double time = 0;
 
 	/** Constructor */
 	public ShapeInterpolation_IP () {
@@ -62,12 +72,12 @@ public class ShapeInterpolation_IP  extends PjWorkshop_IP implements ActionListe
 		Passive.setLayout(new BorderLayout());
 		Panel Active = new Panel();
 		Active.setLayout(new BorderLayout());
-		Label ActiveLabel = new Label("Surface P");
+		Label ActiveLabel = new Label("Origin Mesh");
 		Active.add(ActiveLabel, BorderLayout.NORTH);
 		m_listActive = new PsList(5, true);
 		Active.add(m_listActive, BorderLayout.CENTER);
 		pGeometries.add(Active);
-		Label PassiveLabel = new Label("Surface Q");
+		Label PassiveLabel = new Label("Target Mesh");
 		Passive.add(PassiveLabel, BorderLayout.NORTH);
 		m_listPassive = new PsList(5, true);
 		Passive.add(m_listPassive, BorderLayout.CENTER);
@@ -82,13 +92,47 @@ public class ShapeInterpolation_IP  extends PjWorkshop_IP implements ActionListe
 
 		Panel panelBottom = new Panel(new GridLayout(12,1));
         btnTransform = new Button("Transform");
+        btnTransform.setEnabled(false);
         btnTransform.addActionListener(this);
+        
+        slider = new JSlider(JSlider.HORIZONTAL, 0, 10, 0);
+        slider.setMajorTickSpacing(5);
+        slider.setMinorTickSpacing(1);
+        slider.setPaintTicks(true);
+        slider.setPaintLabels(true);
+        Hashtable<Integer, JLabel> labelTable = new Hashtable<Integer, JLabel>();
+        labelTable.put( new Integer( 0 ), new JLabel("0.0") );
+        labelTable.put( new Integer( 5 ), new JLabel("0.5") );
+        labelTable.put( new Integer( 10 ), new JLabel("1.0") );
+        slider.setLabelTable( labelTable );
+        slider.addChangeListener(new ChangeListener() {
+        	public void stateChanged(ChangeEvent e) {
+        		JSlider source = (JSlider)e.getSource();
+                if (!source.getValueIsAdjusting()) {
+                    double t = (int)source.getValue() / 10.0;
+                    time = t;
+                    if (btnTransform.isEnabled()) {
+                    	PgElementSet set = m_interpolation.getInterpolatedset(time);
+            			PsDebug.warning("Got a new set. faces: " + set.getNumElements());
+            			Vector displays = m_interpolation.getGeometry().getDisplayList();
+            			int numDisplays = displays.size();
+            			for (int i=0; i<numDisplays; i++) {
+            				PvDisplay disp =((PvDisplay)displays.elementAt(i));
+            				disp.addGeometry(set);
+            				// Find a way to update the display
+            			}
+                    }
+                } 
+        	}
+        });
+        
         btnTestConfig = new Button("Test config");
         btnTestConfig.addActionListener(this);
         btnReset = new Button("Reset");
         btnReset.addActionListener(this);
         
         panelBottom.add(btnTransform);
+        panelBottom.add(slider);
         panelBottom.add(btnTestConfig);
         panelBottom.add(btnReset);
         add(panelBottom);
@@ -144,16 +188,17 @@ public class ShapeInterpolation_IP  extends PjWorkshop_IP implements ActionListe
 		if (source == m_bSetSurfaces) {
 			m_interpolation.setGeometries((PgElementSet)m_geomList.elementAt(m_listActive.getSelectedIndex()),
 			(PgElementSet)m_geomList.elementAt(m_listPassive.getSelectedIndex()));
+			btnTransform.setEnabled(true);
 		} else if (source == btnTransform) {
 			PsDebug.warning("going to work");
-			PgElementSet set = m_interpolation.getInterpolatedset(0.5);//m_interpolation.interpolate(0.5);
+			PgElementSet set = m_interpolation.getInterpolatedset(time);
 			PsDebug.warning("Got a new set. faces: " + set.getNumElements());
 			Vector displays = m_interpolation.getGeometry().getDisplayList();
 			int numDisplays = displays.size();
 			for (int i=0; i<numDisplays; i++) {
 				PvDisplay disp =((PvDisplay)displays.elementAt(i));
 				disp.addGeometry(set);
-				// Figure out a way to update the display
+				// Find a way to update the display
 			}
 		}
 	}

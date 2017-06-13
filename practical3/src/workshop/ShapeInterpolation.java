@@ -86,7 +86,7 @@ public class ShapeInterpolation extends PjWorkshop {
 	        EigenvalueDecomposition eig = temp.eig();
 	        for (int v = 0; v < eig.getRealEigenvalues().length; v++){
 	        	PsDebug.warning("eigen stuffs: " + eig.getRealEigenvalues()[v] + ", " + eig.getImagEigenvalues()[v]);
-	        	if (eig.getRealEigenvalues()[v] == 1 && eig.getImagEigenvalues()[v] == 0) {
+	        	if (Math.abs(eig.getRealEigenvalues()[v] - 1.0) <= 0.00001 && Math.abs(eig.getImagEigenvalues()[v]) <= 0.00001) {
 	        		double[] entries = eig.getV().getColumnPackedCopy();
 	        		PdVector axis = new PdVector(3);
 	        		axis.setEntry(0, entries[v*3 + 0]);
@@ -127,12 +127,13 @@ public class ShapeInterpolation extends PjWorkshop {
 			PdVector p3 = meshOrigin.getVertex(faceOrigin.getEntry(2));
 			PdVector nv = meshOrigin.getElementNormal(index);
 			
-			PdVector v1 = PdVector.subNew(p3, p1);
-			PdVector v2 = PdVector.subNew(p2, p1);
+			PdVector v1 = PdVector.subNew(p2, p1);
+			PdVector v2 = PdVector.subNew(p3, p1);
 			
 			PsDebug.warning("Got direction vectors and normal");
 			
 			PdMatrix scaler = new PdMatrix(3);
+			PsDebug.warning("scaler: " + scaler);
 			scaler.multScalar(scalings[index], time);
 			
 			PsDebug.warning("Got scaler");
@@ -140,13 +141,17 @@ public class ShapeInterpolation extends PjWorkshop {
 			PdMatrix id = new PdMatrix(3);
 			id.multScalar(identity, 1-time);
 			id.add(scaler);
+			PsDebug.warning("thingie: " + id);
 			
 			PsDebug.warning("Got id");
 			
 			PdMatrix rot = getRotationMatrix(time * angles[index], rotationAxes[index]);
-			rot.rightMult(scaler);
+			PsDebug.warning("R: " + rot);
+			rot.rightMult(id);
 			
 			PsDebug.warning("Got R");
+			
+			PsDebug.warning("resMatrix: " + rot);
 			
 			v1.leftMultMatrix(rot);
 			v2.leftMultMatrix(rot);
@@ -203,32 +208,32 @@ public class ShapeInterpolation extends PjWorkshop {
 		
 		double Cinv = 1.0 - C;
 		
-		PsDebug.warning(axis + "");
+		//PsDebug.warning(axis + "");
 		
 		double a1 = axis.getEntry(0);
 		double a2 = axis.getEntry(1);
 		double a3 = axis.getEntry(2);
 		
-		PsDebug.warning("got info");
+		//PsDebug.warning("got info");
 		
 		PdMatrix res = new PdMatrix(3);
 		res.setEntry(0, 0, Math.pow(a1, 2) + C*(1-Math.pow(a1, 2)));
 		res.setEntry(1, 0, a1*a2*Cinv + a3*S);
 		res.setEntry(2, 0, a1*a3*Cinv - a2*S);
 		
-		PsDebug.warning("row 0");
+		//PsDebug.warning("row 0");
 		
 		res.setEntry(0, 1, a1*a2*Cinv - a3*S);
 		res.setEntry(1, 1, Math.pow(a2, 2)+ C*(1-Math.pow(a2, 2)));
 		res.setEntry(2, 1, a2*a3*Cinv + a1*S);
 		
-		PsDebug.warning("row 1");
+		//PsDebug.warning("row 1");
 		
 		res.setEntry(0, 2, a1*a3*Cinv + a2*S);
 		res.setEntry(1, 2, a2*a3*Cinv - a1*S);
 		res.setEntry(2, 2, Math.pow(a3, 2) + C*(1-Math.pow(a3, 2)));
 		
-		PsDebug.warning("row 2");
+		//PsDebug.warning("row 2");
 		
 		return res;
 		} catch (Exception e) {
@@ -272,8 +277,8 @@ public class ShapeInterpolation extends PjWorkshop {
 		PdVector nv = mesh.getElementNormal(index);
 		PsDebug.warning("Got normal");
 		
-		PdVector v1 = PdVector.subNew(p3, p1);
-		PdVector v2 = PdVector.subNew(p2, p1);
+		PdVector v1 = PdVector.subNew(p2, p1);
+		PdVector v2 = PdVector.subNew(p3, p1);
 		
 		PsDebug.warning("Got directions");
 		
