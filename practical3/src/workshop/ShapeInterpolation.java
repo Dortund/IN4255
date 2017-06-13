@@ -82,10 +82,10 @@ public class ShapeInterpolation extends PjWorkshop {
 	        
 	        angles[i] = Math.acos((R.trace()-1)/2.0);
 	        
-	        Matrix temp = R.times(R.transpose()).times(0.5);
+	        Matrix temp = R.plus(R.transpose()).times(0.5);
 	        EigenvalueDecomposition eig = temp.eig();
-	        PsDebug.warning("eigen stuffs: " + eig.getRealEigenvalues() + ", " + eig.getImagEigenvalues());
 	        for (int v = 0; v < eig.getRealEigenvalues().length; v++){
+	        	PsDebug.warning("eigen stuffs: " + eig.getRealEigenvalues()[v] + ", " + eig.getImagEigenvalues()[v]);
 	        	if (eig.getRealEigenvalues()[v] == 1 && eig.getImagEigenvalues()[v] == 0) {
 	        		double[] entries = eig.getV().getColumnPackedCopy();
 	        		PdVector axis = new PdVector(3);
@@ -93,7 +93,7 @@ public class ShapeInterpolation extends PjWorkshop {
 	        		axis.setEntry(1, entries[v*3 + 1]);
 	        		axis.setEntry(2, entries[v*3 + 2]);
 	        		rotationAxes[i] = axis;
-	        		return;
+	        		break;
 	        	}
 	        }
 	        
@@ -101,6 +101,8 @@ public class ShapeInterpolation extends PjWorkshop {
 	        PdVector t = meshTarget.getVertex(meshTarget.getElement(i).getEntry(0));
 	        
 	        translations[i] = PdVector.subNew(t, o);
+	        
+	        PsDebug.warning("static translation: " + o + ", " + t);
 		}
 		PsDebug.warning("got all static info");
 	}
@@ -109,8 +111,11 @@ public class ShapeInterpolation extends PjWorkshop {
 		int numElements = meshOrigin.getNumElements();
 		
 		PgElementSet newSet = new PgElementSet();
-		PdVector[] vertices = new PdVector[numElements*3];
-		PiVector[] faces = new PiVector[numElements];
+		newSet.setNumElements(numElements);
+		newSet.setNumVertices(numElements*3);
+		
+		//PdVector[] vertices = new PdVector[numElements*3];
+		//PiVector[] faces = new PiVector[numElements];
 		PdVector[] normals = new PdVector[numElements];
 		
 		PsDebug.warning("Setup data structures");
@@ -152,6 +157,8 @@ public class ShapeInterpolation extends PjWorkshop {
 			
 			PsDebug.warning("Got transformed");
 			
+			PsDebug.warning("translation: " + translations[index]);
+			
 			PdVector translation = new PdVector(translations[index].getEntries());
 			translation.multScalar(time);
 			
@@ -161,11 +168,14 @@ public class ShapeInterpolation extends PjWorkshop {
 			PdVector p2New = PdVector.addNew(v1, translation);
 			PdVector p3New = PdVector.addNew(v2, translation);
 			
-			vertices[index*3 + 0] = p1New;
-			vertices[index*3 + 1] = p2New;
-			vertices[index*3 + 2] = p3New;
+			newSet.setVertex(index*3 + 0, p1New);
+			newSet.setVertex(index*3 + 1, p2New);
+			newSet.setVertex(index*3 + 2, p3New);
+			//vertices[index*3 + 1] = p2New;
+			//vertices[index*3 + 2] = p3New;
 			
-			faces[index] = new PiVector(index*3, index*3+1, index*3+2);
+			//faces[index] = new PiVector(index*3, index*3+1, index*3+2);
+			newSet.setElement(index, new PiVector(index*3, index*3+1, index*3+2));
 			
 			PsDebug.warning("added translation");
 			
@@ -175,9 +185,11 @@ public class ShapeInterpolation extends PjWorkshop {
 			PsDebug.warning("set normal");
 		}
 		
-		newSet.setVertices(vertices);
-		newSet.setElements(faces);
+		//newSet.setVertices(vertices);
+		//newSet.setElements(faces);
 		newSet.setElementNormals(normals);
+		
+		newSet.update(newSet);
 		
 		PsDebug.warning("set data");
 		

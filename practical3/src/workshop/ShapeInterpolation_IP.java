@@ -153,6 +153,7 @@ public class ShapeInterpolation_IP  extends PjWorkshop_IP implements ActionListe
 			for (int i=0; i<numDisplays; i++) {
 				PvDisplay disp =((PvDisplay)displays.elementAt(i));
 				disp.addGeometry(set);
+				// Figure out a way to update the display
 			}
 		}
 	}
