@@ -35,10 +35,6 @@ public class ShapeInterpolation_IP  extends PjWorkshop_IP implements ActionListe
 	protected workshop.ShapeInterpolation m_interpolation;
 	protected   Button			m_bSetSurfaces;
 
-    //protected Button btnGradientMesh;
-	//protected Button btnLooseMesh;
-    //protected Button btnReset;
-    
     protected JSlider slider;
     
     protected double time = 0;
@@ -96,10 +92,7 @@ public class ShapeInterpolation_IP  extends PjWorkshop_IP implements ActionListe
 		pSetSurfaces.add(m_bSetSurfaces, BorderLayout.CENTER);
 		add(pSetSurfaces);
 
-		Panel panelBottom = new Panel(new GridLayout(12,1));
-        //btnLooseMesh = new Button("Get Loose Mesh");
-        //btnLooseMesh.setEnabled(false);
-        //btnLooseMesh.addActionListener(this);
+		Panel panelBottom = new Panel(new GridLayout(3,1));
         
         slider = new JSlider(JSlider.HORIZONTAL, 0, SLIDER_MAX, 0);
         slider.setMajorTickSpacing(10);
@@ -117,25 +110,11 @@ public class ShapeInterpolation_IP  extends PjWorkshop_IP implements ActionListe
                 if (!source.getValueIsAdjusting()) {
                     double t = (int)source.getValue() / new Double(SLIDER_MAX);
                     time = t;
-                    /*PgElementSet loose = m_interpolation.getInterpolatedset(time);
-                    addMesh(loose);
-    				PgElementSet mesh = m_interpolation.getGradientInterpolated(loose);
-    				addMesh(mesh);*/
                     getMeshes();
                 } 
         	}
         });
-        
-        //btnGradientMesh = new Button("Get Mesh from Gradient");
-        //btnGradientMesh.addActionListener(this);
-        
-        //btnReset = new Button("Reset");
-        //btnReset.addActionListener(this);
-        
-        //panelBottom.add(btnLooseMesh);
         panelBottom.add(slider);
-        //panelBottom.add(btnGradientMesh);
-        //panelBottom.add(btnReset);
         add(panelBottom);
 
 		updateGeomList();
@@ -190,21 +169,13 @@ public class ShapeInterpolation_IP  extends PjWorkshop_IP implements ActionListe
 			m_interpolation.setGeometries((PgElementSet)m_geomList.elementAt(m_listActive.getSelectedIndex()),
 			(PgElementSet)m_geomList.elementAt(m_listPassive.getSelectedIndex()));
 			getMeshes();
-		}/* else if (source == btnLooseMesh) {
-			PsDebug.warning("going to work");
-			PgElementSet set = m_interpolation.getInterpolatedset(time);
-			looseMesh = set;
-			PsDebug.warning("Got a new set. faces: " + set.getNumElements());
-			addMesh(set);
-		} else if (source == btnGradientMesh) {
-			//if (looseMesh != null) {
-			PgElementSet loose = m_interpolation.getInterpolatedset(time);
-				PgElementSet mesh = m_interpolation.getGradientInterpolated(loose);
-				addMesh(mesh);
-			//}
-		}*/
+		}
 	}
 	
+	/**
+	 * Get the loose and gradient mesh.
+	 * Removes the old meshes and adds the new
+	 */
 	private void getMeshes() {
 		if (looseMesh != null) {
 			removeMesh(looseMesh);
@@ -222,6 +193,10 @@ public class ShapeInterpolation_IP  extends PjWorkshop_IP implements ActionListe
 		addMesh(gradientMesh);
 	}
 	
+	/**
+	 * Removes a geometry from all displays
+	 * @param mesh The geometry to be removed
+	 */
 	private void removeMesh(PgElementSet mesh) {
 		Vector displays = m_interpolation.getGeometry().getDisplayList();
 		int numDisplays = displays.size();
@@ -232,6 +207,10 @@ public class ShapeInterpolation_IP  extends PjWorkshop_IP implements ActionListe
 		}
 	}
 	
+	/**
+	 * Adds a geometry to all displays
+	 * @param mesh The geometry to be added
+	 */
 	private void addMesh(PgElementSet mesh) {
 		Vector displays = m_interpolation.getGeometry().getDisplayList();
 		int numDisplays = displays.size();
