@@ -318,8 +318,11 @@ public class ShapeInterpolation extends PjWorkshop {
     	PdVector z = new PdVector(origin.getNumVertices());
         
         PsDebug.warning("Calculating right hand");
-        PnSparseMatrix matrixG_target = Util.meshToGradient(origin, intermediate);
-    	PnSparseMatrix right = PnSparseMatrix.multMatrices(MatrixGTranspose, PnSparseMatrix.multMatrices(matrixM, matrixG_target, null), null);
+       /* PnSparseMatrix matrixG_target = Util.meshToGradient(origin, intermediate);
+        //PnSparseMatrix MatrixGTranspose_target = PnSparseMatrix.transposeNew(matrixG_target);
+        //PnSparseMatrix matrixM_target = Util.getM(origin);
+    	//PnSparseMatrix right = PnSparseMatrix.multMatrices(MatrixGTranspose_target, PnSparseMatrix.multMatrices(matrixM_target, matrixG_target, null), null);
+        PnSparseMatrix right = PnSparseMatrix.multMatrices(MatrixGTranspose, PnSparseMatrix.multMatrices(matrixM, matrixG_target, null), null);
     	//s1.add(PnSparseMatrix.multScalar(matrixM, 0.0001));
     	PnSparseMatrix rightHand = PnSparseMatrix.copyNew(right);
     	
@@ -339,7 +342,14 @@ public class ShapeInterpolation extends PjWorkshop {
         
         PsDebug.warning(xGradient + "");
         PsDebug.warning(yGradient + "");
-        PsDebug.warning(zGradient + "");
+        PsDebug.warning(zGradient + "");*/
+        
+        PdVector[] g = Util.meshToGradientVector(origin, intermediate);
+        PnSparseMatrix right = PnSparseMatrix.multMatrices(MatrixGTranspose, matrixM, null);
+        
+        PdVector xGradient = PnSparseMatrix.rightMultVector(right, g[0], null);
+        PdVector yGradient = PnSparseMatrix.rightMultVector(right, g[1], null);
+        PdVector zGradient = PnSparseMatrix.rightMultVector(right, g[2], null);
         
         PsDebug.warning("Solving linear problems");
     	try {
@@ -398,6 +408,9 @@ public class ShapeInterpolation extends PjWorkshop {
     	
     	copy.update(copy);
 		
+    	//PsDebug.warning(matrixG_target + "");
+    	//PsDebug.warning(Util.meshToGradient(copy) + "");
+    	
 		return copy;
 	}
 	

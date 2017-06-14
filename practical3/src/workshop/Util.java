@@ -57,7 +57,8 @@ public class Util {
             PdMatrix subGradient = triangleToGradient(new PdVector[]{
             		gradientTarget.getVertex(triangleTarget.getEntry(0)),
             		gradientTarget.getVertex(triangleTarget.getEntry(1)),
-            		gradientTarget.getVertex(triangleTarget.getEntry(2))});
+            		gradientTarget.getVertex(triangleTarget.getEntry(2))},
+            		gradientTarget.getElementNormal(triangleIdx));
 
             for(int columnIdx = 0; columnIdx < 3; columnIdx++) {
                 int column = 3 * triangleIdx;
@@ -69,6 +70,58 @@ public class Util {
         }
 
         return G;
+    }
+	
+	/**
+	 * Get a gradient matrix with the gradients of a target mesh with the same number of faces
+	 * @param mesh Mesh to calculate gradients for
+	 * @param gradientTarget The mesh that is used to get the actual gradient
+	 * @return gradient matrix G
+	 */
+	public static PdVector[] meshToGradientVector(PgElementSet mesh, PgElementSet gradientTarget) {
+        // 3#T x #V matrix
+        //PnSparseMatrix G = new PnSparseMatrix(mesh.getNumElements() * 3, mesh.getNumVertices(), 3);
+        PiVector[] trianglesMesh = mesh.getElements();
+        PiVector[] trianglesTarget = gradientTarget.getElements();
+        
+        PdVector x = new PdVector(mesh.getNumElements()*3);
+        PdVector y = new PdVector(mesh.getNumElements()*3);
+        PdVector z = new PdVector(mesh.getNumElements()*3);
+
+        for(int triangleIdx = 0; triangleIdx < trianglesMesh.length; triangleIdx++) {
+            PiVector triangleMesh = trianglesMesh[triangleIdx];
+            PiVector triangleTarget = trianglesTarget[triangleIdx];
+            
+            PdVector[] vertices = new PdVector[]{
+            		gradientTarget.getVertex(triangleTarget.getEntry(0)),
+            		gradientTarget.getVertex(triangleTarget.getEntry(1)),
+            		gradientTarget.getVertex(triangleTarget.getEntry(2))};
+
+            PdMatrix subGradient = triangleToGradient(vertices,
+            		gradientTarget.getElementNormal(triangleIdx));
+            
+            PdVector xTemp = new PdVector(3);
+            PdVector yTemp = new PdVector(3);
+            PdVector zTemp = new PdVector(3);
+            
+            for (int i = 0; i < vertices.length; i++) {
+            	xTemp.setEntry(i, vertices[i].getEntry(0));
+            	yTemp.setEntry(i, vertices[i].getEntry(1));
+            	zTemp.setEntry(i, vertices[i].getEntry(2));
+            }
+            
+            xTemp.leftMultMatrix(subGradient);
+            yTemp.leftMultMatrix(subGradient);
+            zTemp.leftMultMatrix(subGradient);
+            
+            for (int i = 0; i < 3; i++) {
+            	x.setEntry(triangleIdx * 3 + i, xTemp.getEntry(i));
+            	y.setEntry(triangleIdx * 3 + i, yTemp.getEntry(i));
+            	z.setEntry(triangleIdx * 3 + i, zTemp.getEntry(i));
+            }
+        }
+
+        return new PdVector[] {x, y, z};
     }
 	
 	/**
@@ -87,7 +140,8 @@ public class Util {
             PdMatrix subGradient = triangleToGradient(new PdVector[]{
             		mesh.getVertex(triangle.getEntry(0)),
             		mesh.getVertex(triangle.getEntry(1)),
-            		mesh.getVertex(triangle.getEntry(2))});
+            		mesh.getVertex(triangle.getEntry(2))},
+            		mesh.getElementNormal(triangleIdx));
 
             for(int columnIdx = 0; columnIdx < 3; columnIdx++) {
                 int column = 3 * triangleIdx;
@@ -104,7 +158,7 @@ public class Util {
     /**
      * Computes a 3x3 gradient matrix that maps a linear polynomial over a triangle to its gradient vector
      */
-    private static PdMatrix triangleToGradient(PdVector[] vertices) {
+    private static PdMatrix triangleToGradient(PdVector[] vertices, PdVector normal) {
         PdMatrix gradient = new PdMatrix(3, 3);
 
         PdVector p1 = vertices[0];
@@ -118,8 +172,8 @@ public class Util {
         double area = PdVector.crossNew(V, W).length() * 0.5;
 
         // Calculate the normal
-        PdVector normal = PdVector.crossNew(V, W);
-        normal.normalize();
+        //PdVector normal = PdVector.crossNew(V, W);
+        //normal.normalize();
 
         PdVector e1 = PdVector.subNew(p3, p2);
         PdVector e2 = PdVector.subNew(p1, p3);
