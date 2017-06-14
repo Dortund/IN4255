@@ -403,22 +403,16 @@ public class ShapeInterpolation extends PjWorkshop {
 		}
     	PsDebug.warning("Linear problems solved");
     	
-    	PdVector[] vertices = copy.getVertices();
-    	
     	// Calculate the old and new mean
     	PsDebug.warning("Calculating difference in mean");
-    	PdVector sumOld = new PdVector(3);
     	PdVector sumNew = new PdVector(3);
     	for (int vIndex = 0; vIndex < origin.getNumVertices(); vIndex++) {
-    		PdVector vertexReal = vertices[vIndex];
-    		sumOld.add(vertexReal);
-    		
     		sumNew.setEntry(0, sumNew.getEntry(0) + x.getEntry(vIndex));
     		sumNew.setEntry(1, sumNew.getEntry(1) + y.getEntry(vIndex));
     		sumNew.setEntry(2, sumNew.getEntry(2) + z.getEntry(vIndex));
     	}
-    	sumOld.multScalar(1.0 / origin.getNumVertices());
     	sumNew.multScalar(1.0 / origin.getNumVertices());
+    	PdVector sumOld = getMean(intermediate.getVertices());
     	
     	// Get the translation from the new mean to the old mean
     	PdVector translationMean = PdVector.subNew(sumOld, sumNew);
@@ -441,6 +435,15 @@ public class ShapeInterpolation extends PjWorkshop {
     	//PsDebug.warning(Util.meshToGradient(copy) + "");
     	
 		return copy;
+	}
+	
+	private PdVector getMean(PdVector[] vertices) {
+		PdVector sum = new PdVector(3);
+		for (PdVector v : vertices) {
+			sum.add(v);
+		}
+		sum.multScalar(1.0 / vertices.length);
+		return sum;
 	}
 	
 	/** Set two Geometries. */

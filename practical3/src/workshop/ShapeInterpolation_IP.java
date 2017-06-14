@@ -12,6 +12,7 @@ import java.awt.event.ActionListener;
 import java.util.Hashtable;
 import java.util.Vector;
 
+import javax.swing.JCheckBox;
 import javax.swing.JLabel;
 import javax.swing.JSlider;
 import javax.swing.event.ChangeEvent;
@@ -34,14 +35,18 @@ public class ShapeInterpolation_IP  extends PjWorkshop_IP implements ActionListe
 	protected workshop.ShapeInterpolation m_interpolation;
 	protected   Button			m_bSetSurfaces;
 
-    protected Button btnGradientMesh;
-	protected Button btnLooseMesh;
-    protected Button btnReset;
+    //protected Button btnGradientMesh;
+	//protected Button btnLooseMesh;
+    //protected Button btnReset;
     
     protected JSlider slider;
     
     protected double time = 0;
     protected PgElementSet looseMesh;
+    protected PgElementSet gradientMesh;
+    
+    protected static final int SLIDER_MAX = 20;
+    
 
 	/** Constructor */
 	public ShapeInterpolation_IP () {
@@ -92,52 +97,45 @@ public class ShapeInterpolation_IP  extends PjWorkshop_IP implements ActionListe
 		add(pSetSurfaces);
 
 		Panel panelBottom = new Panel(new GridLayout(12,1));
-        btnLooseMesh = new Button("Get Loose Mesh");
-        btnLooseMesh.setEnabled(false);
-        btnLooseMesh.addActionListener(this);
+        //btnLooseMesh = new Button("Get Loose Mesh");
+        //btnLooseMesh.setEnabled(false);
+        //btnLooseMesh.addActionListener(this);
         
-        slider = new JSlider(JSlider.HORIZONTAL, 0, 10, 0);
-        slider.setMajorTickSpacing(5);
+        slider = new JSlider(JSlider.HORIZONTAL, 0, SLIDER_MAX, 0);
+        slider.setMajorTickSpacing(10);
         slider.setMinorTickSpacing(1);
         slider.setPaintTicks(true);
         slider.setPaintLabels(true);
         Hashtable<Integer, JLabel> labelTable = new Hashtable<Integer, JLabel>();
         labelTable.put( new Integer( 0 ), new JLabel("0.0") );
-        labelTable.put( new Integer( 5 ), new JLabel("0.5") );
-        labelTable.put( new Integer( 10 ), new JLabel("1.0") );
+        labelTable.put( new Integer( 10 ), new JLabel("0.5") );
+        labelTable.put( new Integer( 20 ), new JLabel("1.0") );
         slider.setLabelTable( labelTable );
         slider.addChangeListener(new ChangeListener() {
         	public void stateChanged(ChangeEvent e) {
         		JSlider source = (JSlider)e.getSource();
                 if (!source.getValueIsAdjusting()) {
-                    double t = (int)source.getValue() / 10.0;
+                    double t = (int)source.getValue() / new Double(SLIDER_MAX);
                     time = t;
-                    if (btnLooseMesh.isEnabled()) {
-                    	PgElementSet set = m_interpolation.getInterpolatedset(time);
-                    	looseMesh = set;
-            			PsDebug.warning("Got a new set. faces: " + set.getNumElements());
-            			Vector displays = m_interpolation.getGeometry().getDisplayList();
-            			int numDisplays = displays.size();
-            			for (int i=0; i<numDisplays; i++) {
-            				PvDisplay disp =((PvDisplay)displays.elementAt(i));
-            				disp.addGeometry(set);
-            				// Find a way to update the display
-            			}
-                    }
+                    /*PgElementSet loose = m_interpolation.getInterpolatedset(time);
+                    addMesh(loose);
+    				PgElementSet mesh = m_interpolation.getGradientInterpolated(loose);
+    				addMesh(mesh);*/
+                    getMeshes();
                 } 
         	}
         });
         
-        btnGradientMesh = new Button("Get Mesh from Gradient");
-        btnGradientMesh.addActionListener(this);
+        //btnGradientMesh = new Button("Get Mesh from Gradient");
+        //btnGradientMesh.addActionListener(this);
         
-        btnReset = new Button("Reset");
-        btnReset.addActionListener(this);
+        //btnReset = new Button("Reset");
+        //btnReset.addActionListener(this);
         
-        panelBottom.add(btnLooseMesh);
+        //panelBottom.add(btnLooseMesh);
         panelBottom.add(slider);
-        panelBottom.add(btnGradientMesh);
-        panelBottom.add(btnReset);
+        //panelBottom.add(btnGradientMesh);
+        //panelBottom.add(btnReset);
         add(panelBottom);
 
 		updateGeomList();
@@ -191,18 +189,44 @@ public class ShapeInterpolation_IP  extends PjWorkshop_IP implements ActionListe
 		if (source == m_bSetSurfaces) {
 			m_interpolation.setGeometries((PgElementSet)m_geomList.elementAt(m_listActive.getSelectedIndex()),
 			(PgElementSet)m_geomList.elementAt(m_listPassive.getSelectedIndex()));
-			btnLooseMesh.setEnabled(true);
-		} else if (source == btnLooseMesh) {
+			getMeshes();
+		}/* else if (source == btnLooseMesh) {
 			PsDebug.warning("going to work");
 			PgElementSet set = m_interpolation.getInterpolatedset(time);
 			looseMesh = set;
 			PsDebug.warning("Got a new set. faces: " + set.getNumElements());
 			addMesh(set);
 		} else if (source == btnGradientMesh) {
-			if (looseMesh != null) {
-				PgElementSet mesh = m_interpolation.getGradientInterpolated(looseMesh);
+			//if (looseMesh != null) {
+			PgElementSet loose = m_interpolation.getInterpolatedset(time);
+				PgElementSet mesh = m_interpolation.getGradientInterpolated(loose);
 				addMesh(mesh);
-			}
+			//}
+		}*/
+	}
+	
+	private void getMeshes() {
+		if (looseMesh != null) {
+			removeMesh(looseMesh);
+		}
+		if (gradientMesh != null) {
+			removeMesh(gradientMesh);
+		}
+		PgElementSet loose = m_interpolation.getInterpolatedset(time);
+		loose.setVisible(false);
+        addMesh(loose);
+		PgElementSet gradient = m_interpolation.getGradientInterpolated(loose);
+		gradient.setVisible(true);
+		addMesh(gradient);
+	}
+	
+	private void removeMesh(PgElementSet mesh) {
+		Vector displays = m_interpolation.getGeometry().getDisplayList();
+		int numDisplays = displays.size();
+		for (int i=0; i<numDisplays; i++) {
+			PvDisplay disp =((PvDisplay)displays.elementAt(i));
+			disp.removeGeometry(mesh);
+			mesh.update(mesh);
 		}
 	}
 	
@@ -212,8 +236,6 @@ public class ShapeInterpolation_IP  extends PjWorkshop_IP implements ActionListe
 		for (int i=0; i<numDisplays; i++) {
 			PvDisplay disp =((PvDisplay)displays.elementAt(i));
 			disp.addGeometry(mesh);
-			// Find a way to update the display
-			//disp.showScenegraph(true);
 			mesh.update(mesh);
 		}
 	}
