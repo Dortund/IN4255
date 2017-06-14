@@ -114,6 +114,7 @@ public class ShapeInterpolation_IP  extends PjWorkshop_IP implements ActionListe
                     time = t;
                     if (btnLooseMesh.isEnabled()) {
                     	PgElementSet set = m_interpolation.getInterpolatedset(time);
+                    	looseMesh = set;
             			PsDebug.warning("Got a new set. faces: " + set.getNumElements());
             			Vector displays = m_interpolation.getGeometry().getDisplayList();
             			int numDisplays = displays.size();
@@ -129,6 +130,7 @@ public class ShapeInterpolation_IP  extends PjWorkshop_IP implements ActionListe
         
         btnGradientMesh = new Button("Get Mesh from Gradient");
         btnGradientMesh.addActionListener(this);
+        
         btnReset = new Button("Reset");
         btnReset.addActionListener(this);
         

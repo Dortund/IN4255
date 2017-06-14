@@ -39,14 +39,44 @@ public class Util {
     }
 	
 	/**
+	 * Get a gradient matrix with the gradients of a target mesh with the same number of faces
+	 * @param mesh Mesh to calculate gradients for
+	 * @param gradientTarget The mesh that is used to get the actual gradient
+	 * @return gradient matrix G
+	 */
+	public static PnSparseMatrix meshToGradient(PgElementSet mesh, PgElementSet gradientTarget) {
+        // 3#T x #V matrix
+        PnSparseMatrix G = new PnSparseMatrix(mesh.getNumElements() * 3, mesh.getNumVertices(), 3);
+        PiVector[] trianglesMesh = mesh.getElements();
+        PiVector[] trianglesTarget = gradientTarget.getElements();
+
+        for(int triangleIdx = 0; triangleIdx < trianglesMesh.length; triangleIdx++) {
+            PiVector triangleMesh = trianglesMesh[triangleIdx];
+            PiVector triangleTarget = trianglesTarget[triangleIdx];
+
+            PdMatrix subGradient = triangleToGradient(new PdVector[]{
+            		gradientTarget.getVertex(triangleTarget.getEntry(0)),
+            		gradientTarget.getVertex(triangleTarget.getEntry(1)),
+            		gradientTarget.getVertex(triangleTarget.getEntry(2))});
+
+            for(int columnIdx = 0; columnIdx < 3; columnIdx++) {
+                int column = 3 * triangleIdx;
+
+                G.addEntry(column, triangleMesh.getEntry(columnIdx), subGradient.getColumn(columnIdx).getEntry(0));
+                G.addEntry(column + 1, triangleMesh.getEntry(columnIdx), subGradient.getColumn(columnIdx).getEntry(1));
+                G.addEntry(column + 2, triangleMesh.getEntry(columnIdx), subGradient.getColumn(columnIdx).getEntry(2));
+            }
+        }
+
+        return G;
+    }
+	
+	/**
 	 * Computes matrix G for a triangle mesh
 	 * @param mesh The triangle mesh
 	 * @return The matrix G
 	 */
 	public static PnSparseMatrix meshToGradient(PgElementSet mesh) {
-    	if (mesh == null)
-    		return null;
-    	
         // 3#T x #V matrix
         PnSparseMatrix G = new PnSparseMatrix(mesh.getNumElements() * 3, mesh.getNumVertices(), 3);
         PiVector[] triangles = mesh.getElements();

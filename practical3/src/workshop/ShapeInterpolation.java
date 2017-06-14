@@ -302,14 +302,12 @@ public class ShapeInterpolation extends PjWorkshop {
 	}
 	
 	private PgElementSet interpolateSet(PgElementSet origin, PgElementSet intermediate) {
-		PgElementSet copy = new PgElementSet();
-		origin.copyElementSet(copy);
-		
-		PnSparseMatrix matrixG = Util.meshToGradient(origin);
-        PnSparseMatrix MatrixGTranspose = PnSparseMatrix.transposeNew(matrixG);
-        PnSparseMatrix matrixM = Util.getM(origin);
+		PgElementSet copy = (PgElementSet) origin.clone();
         
         PsDebug.warning("Calculating left hand");
+        PnSparseMatrix matrixG = Util.meshToGradient(origin);
+        PnSparseMatrix MatrixGTranspose = PnSparseMatrix.transposeNew(matrixG);
+        PnSparseMatrix matrixM = Util.getM(origin);
     	PnSparseMatrix left = PnSparseMatrix.multMatrices(MatrixGTranspose, PnSparseMatrix.multMatrices(matrixM, matrixG, null), null);
     	//s1.add(PnSparseMatrix.multScalar(matrixM, 0.0001));
     	PnSparseMatrix leftHand = PnSparseMatrix.copyNew(left);
@@ -318,29 +316,30 @@ public class ShapeInterpolation extends PjWorkshop {
     	PdVector x = new PdVector(origin.getNumVertices());
     	PdVector y = new PdVector(origin.getNumVertices());
     	PdVector z = new PdVector(origin.getNumVertices());
-    	
-    	PnSparseMatrix matrixG_target = Util.meshToGradient(origin);
-        PnSparseMatrix MatrixGTranspose_target = PnSparseMatrix.transposeNew(matrixG_target);
-        PnSparseMatrix matrixM_target = Util.getM(origin);
         
         PsDebug.warning("Calculating right hand");
-    	PnSparseMatrix right = PnSparseMatrix.multMatrices(matrixM_target, PnSparseMatrix.multMatrices(MatrixGTranspose_target, matrixG_target, null), null);
+        PnSparseMatrix matrixG_target = Util.meshToGradient(origin, intermediate);
+    	PnSparseMatrix right = PnSparseMatrix.multMatrices(MatrixGTranspose, PnSparseMatrix.multMatrices(matrixM, matrixG_target, null), null);
     	//s1.add(PnSparseMatrix.multScalar(matrixM, 0.0001));
     	PnSparseMatrix rightHand = PnSparseMatrix.copyNew(right);
     	
     	// Get the current x/y/z values
-        PdVector x_target = new PdVector(intermediate.getNumVertices());
-        PdVector y_target = new PdVector(intermediate.getNumVertices());
-        PdVector z_target = new PdVector(intermediate.getNumVertices());
-        for(int i = 0; i < intermediate.getNumVertices(); i++) {
-            x_target.setEntry(i, intermediate.getVertex(i).getEntry(0));
-            y_target.setEntry(i, intermediate.getVertex(i).getEntry(1));
-            z_target.setEntry(i, intermediate.getVertex(i).getEntry(2));
+        PdVector x_target = new PdVector(origin.getNumVertices());
+        PdVector y_target = new PdVector(origin.getNumVertices());
+        PdVector z_target = new PdVector(origin.getNumVertices());
+        for(int i = 0; i < origin.getNumVertices(); i++) {
+            x_target.setEntry(i, origin.getVertex(i).getEntry(0));
+            y_target.setEntry(i, origin.getVertex(i).getEntry(1));
+            z_target.setEntry(i, origin.getVertex(i).getEntry(2));
         }
         
         PdVector xGradient = PnSparseMatrix.rightMultVector(rightHand, x_target, null);
         PdVector yGradient = PnSparseMatrix.rightMultVector(rightHand, y_target, null);
         PdVector zGradient = PnSparseMatrix.rightMultVector(rightHand, z_target, null);
+        
+        PsDebug.warning(xGradient + "");
+        PsDebug.warning(yGradient + "");
+        PsDebug.warning(zGradient + "");
         
         PsDebug.warning("Solving linear problems");
     	try {
