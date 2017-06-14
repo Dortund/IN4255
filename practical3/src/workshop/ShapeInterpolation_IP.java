@@ -212,12 +212,14 @@ public class ShapeInterpolation_IP  extends PjWorkshop_IP implements ActionListe
 		if (gradientMesh != null) {
 			removeMesh(gradientMesh);
 		}
-		PgElementSet loose = m_interpolation.getInterpolatedset(time);
-		loose.setVisible(false);
-        addMesh(loose);
-		PgElementSet gradient = m_interpolation.getGradientInterpolated(loose);
-		gradient.setVisible(true);
-		addMesh(gradient);
+		looseMesh = m_interpolation.getInterpolatedset(time);
+		looseMesh.setVisible(false);
+		looseMesh.setName("LooseMesh");
+        addMesh(looseMesh);
+		gradientMesh = m_interpolation.getGradientInterpolated(looseMesh);
+		gradientMesh.setVisible(true);
+		gradientMesh.setName("GradientMesh");
+		addMesh(gradientMesh);
 	}
 	
 	private void removeMesh(PgElementSet mesh) {
