@@ -14,6 +14,7 @@ import workshop.RigidTransformation;
 import workshop.Topology;
 import workshop.ShapeDeformation;
 import workshop.SurfaceSmoothing;
+import workshop.ShapeInterpolation;
 
 public class PgElementSet_Menu extends PgPointSet_Menu {
 	
@@ -23,7 +24,8 @@ public class PgElementSet_Menu extends PgPointSet_Menu {
 		Topology			("Topology..."),
 		RigidTransformation ("Rigid transformation..."),
 		ShapeDeformation 	("Shape deformation..."),
-		SurfaceSmoothing	("Surface Smoothing...")
+		SurfaceSmoothing	("Surface Smoothing..."),
+		ShapeInterpolation 	("Shape Interpolation...")
 		// Additional entries...
 		;
 		protected final String name;
@@ -141,6 +143,16 @@ public class PgElementSet_Menu extends PgPointSet_Menu {
 				dialog = new PjWorkshop_Dialog(false);
 				dialog.setParent(surfaceSmoothing);
 				dialog.update(surfaceSmoothing);
+			case ShapeInterpolation:
+				ShapeInterpolation shapeInterpolation = new ShapeInterpolation();
+				shapeInterpolation.setGeometry(m_elementSet);
+				if (currDisp == null) {
+					if (PsDebug.WARNING) PsDebug.warning("missing display.");
+				} else
+					shapeInterpolation.setDisplay(currDisp);
+				dialog = new PjWorkshop_Dialog(false);
+				dialog.setParent(shapeInterpolation);
+				dialog.update(shapeInterpolation);
 				dialog.setVisible(true);
 				break;
 		}
