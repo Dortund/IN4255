@@ -93,21 +93,22 @@ public class Util {
             PiVector triangleTarget = trianglesTarget[triangleIdx];
             
             PdVector[] vertices = new PdVector[]{
-            		gradientTarget.getVertex(triangleTarget.getEntry(0)),
-            		gradientTarget.getVertex(triangleTarget.getEntry(1)),
-            		gradientTarget.getVertex(triangleTarget.getEntry(2))};
+            		mesh.getVertex(triangleMesh.getEntry(0)),
+            		mesh.getVertex(triangleMesh.getEntry(1)),
+            		mesh.getVertex(triangleMesh.getEntry(2))};
 
             PdMatrix subGradient = triangleToGradient(vertices,
-            		gradientTarget.getElementNormal(triangleIdx));
+            		mesh.getElementNormal(triangleIdx));
             
             PdVector xTemp = new PdVector(3);
             PdVector yTemp = new PdVector(3);
             PdVector zTemp = new PdVector(3);
             
             for (int i = 0; i < vertices.length; i++) {
-            	xTemp.setEntry(i, vertices[i].getEntry(0));
-            	yTemp.setEntry(i, vertices[i].getEntry(1));
-            	zTemp.setEntry(i, vertices[i].getEntry(2));
+            	PdVector v = gradientTarget.getVertex(triangleTarget.getEntry(i));
+            	xTemp.setEntry(i, v.getEntry(0));
+            	yTemp.setEntry(i, v.getEntry(1));
+            	zTemp.setEntry(i, v.getEntry(2));
             }
             
             xTemp.leftMultMatrix(subGradient);

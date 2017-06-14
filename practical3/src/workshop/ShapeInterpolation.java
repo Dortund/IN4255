@@ -406,7 +406,7 @@ public class ShapeInterpolation extends PjWorkshop {
     		copy.setVertex(vIndex, newV);
     	}
     	
-    	copy.update(copy);
+    	//copy.update(copy);
 		
     	//PsDebug.warning(matrixG_target + "");
     	//PsDebug.warning(Util.meshToGradient(copy) + "");

@@ -213,7 +213,8 @@ public class ShapeInterpolation_IP  extends PjWorkshop_IP implements ActionListe
 			PvDisplay disp =((PvDisplay)displays.elementAt(i));
 			disp.addGeometry(mesh);
 			// Find a way to update the display
-			disp.showScenegraph(true);
+			//disp.showScenegraph(true);
+			mesh.update(mesh);
 		}
 	}
 
