@@ -34,13 +34,14 @@ public class ShapeInterpolation_IP  extends PjWorkshop_IP implements ActionListe
 	protected workshop.ShapeInterpolation m_interpolation;
 	protected   Button			m_bSetSurfaces;
 
-    protected Button btnTestConfig;
-	protected Button btnTransform;
+    protected Button btnGradientMesh;
+	protected Button btnLooseMesh;
     protected Button btnReset;
     
     protected JSlider slider;
     
     protected double time = 0;
+    protected PgElementSet looseMesh;
 
 	/** Constructor */
 	public ShapeInterpolation_IP () {
@@ -91,9 +92,9 @@ public class ShapeInterpolation_IP  extends PjWorkshop_IP implements ActionListe
 		add(pSetSurfaces);
 
 		Panel panelBottom = new Panel(new GridLayout(12,1));
-        btnTransform = new Button("Transform");
-        btnTransform.setEnabled(false);
-        btnTransform.addActionListener(this);
+        btnLooseMesh = new Button("Get Loose Mesh");
+        btnLooseMesh.setEnabled(false);
+        btnLooseMesh.addActionListener(this);
         
         slider = new JSlider(JSlider.HORIZONTAL, 0, 10, 0);
         slider.setMajorTickSpacing(5);
@@ -111,7 +112,7 @@ public class ShapeInterpolation_IP  extends PjWorkshop_IP implements ActionListe
                 if (!source.getValueIsAdjusting()) {
                     double t = (int)source.getValue() / 10.0;
                     time = t;
-                    if (btnTransform.isEnabled()) {
+                    if (btnLooseMesh.isEnabled()) {
                     	PgElementSet set = m_interpolation.getInterpolatedset(time);
             			PsDebug.warning("Got a new set. faces: " + set.getNumElements());
             			Vector displays = m_interpolation.getGeometry().getDisplayList();
@@ -126,14 +127,14 @@ public class ShapeInterpolation_IP  extends PjWorkshop_IP implements ActionListe
         	}
         });
         
-        btnTestConfig = new Button("Test config");
-        btnTestConfig.addActionListener(this);
+        btnGradientMesh = new Button("Get Mesh from Gradient");
+        btnGradientMesh.addActionListener(this);
         btnReset = new Button("Reset");
         btnReset.addActionListener(this);
         
-        panelBottom.add(btnTransform);
+        panelBottom.add(btnLooseMesh);
         panelBottom.add(slider);
-        panelBottom.add(btnTestConfig);
+        panelBottom.add(btnGradientMesh);
         panelBottom.add(btnReset);
         add(panelBottom);
 
@@ -188,18 +189,29 @@ public class ShapeInterpolation_IP  extends PjWorkshop_IP implements ActionListe
 		if (source == m_bSetSurfaces) {
 			m_interpolation.setGeometries((PgElementSet)m_geomList.elementAt(m_listActive.getSelectedIndex()),
 			(PgElementSet)m_geomList.elementAt(m_listPassive.getSelectedIndex()));
-			btnTransform.setEnabled(true);
-		} else if (source == btnTransform) {
+			btnLooseMesh.setEnabled(true);
+		} else if (source == btnLooseMesh) {
 			PsDebug.warning("going to work");
 			PgElementSet set = m_interpolation.getInterpolatedset(time);
+			looseMesh = set;
 			PsDebug.warning("Got a new set. faces: " + set.getNumElements());
-			Vector displays = m_interpolation.getGeometry().getDisplayList();
-			int numDisplays = displays.size();
-			for (int i=0; i<numDisplays; i++) {
-				PvDisplay disp =((PvDisplay)displays.elementAt(i));
-				disp.addGeometry(set);
-				// Find a way to update the display
+			addMesh(set);
+		} else if (source == btnGradientMesh) {
+			if (looseMesh != null) {
+				PgElementSet mesh = m_interpolation.getGradientInterpolated(looseMesh);
+				addMesh(mesh);
 			}
+		}
+	}
+	
+	private void addMesh(PgElementSet mesh) {
+		Vector displays = m_interpolation.getGeometry().getDisplayList();
+		int numDisplays = displays.size();
+		for (int i=0; i<numDisplays; i++) {
+			PvDisplay disp =((PvDisplay)displays.elementAt(i));
+			disp.addGeometry(mesh);
+			// Find a way to update the display
+			disp.showScenegraph(true);
 		}
 	}
 

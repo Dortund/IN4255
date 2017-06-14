@@ -8,6 +8,8 @@ import jv.object.PsDebug;
 import jv.vecmath.PdMatrix;
 import jv.vecmath.PdVector;
 import jv.vecmath.PiVector;
+import jvx.numeric.PnBiconjugateGradient;
+import jvx.numeric.PnSparseMatrix;
 import jvx.project.PjWorkshop;
 
 public class ShapeInterpolation extends PjWorkshop {
@@ -20,6 +22,7 @@ public class ShapeInterpolation extends PjWorkshop {
      * This can be used to reset P.
      */
     PdVector[] meshOriginBackup;
+    PdVector[] meshOriginNormalsBackup;
 	/** Second surface to be registered. */
 	PgElementSet	meshTarget;
     /** Keeps the a copy of the vertices of Q when loaded
@@ -292,6 +295,111 @@ public class ShapeInterpolation extends PjWorkshop {
 			PsDebug.warning(e.toString());
 			return new PdMatrix(3);
 		}
+	}
+	
+	public PgElementSet getGradientInterpolated(PgElementSet looseMesh) {
+		return interpolateSet(meshOrigin, looseMesh);
+	}
+	
+	private PgElementSet interpolateSet(PgElementSet origin, PgElementSet intermediate) {
+		PgElementSet copy = new PgElementSet();
+		origin.copyElementSet(copy);
+		
+		PnSparseMatrix matrixG = Util.meshToGradient(origin);
+        PnSparseMatrix MatrixGTranspose = PnSparseMatrix.transposeNew(matrixG);
+        PnSparseMatrix matrixM = Util.getM(origin);
+        
+        PsDebug.warning("Calculating left hand");
+    	PnSparseMatrix left = PnSparseMatrix.multMatrices(MatrixGTranspose, PnSparseMatrix.multMatrices(matrixM, matrixG, null), null);
+    	//s1.add(PnSparseMatrix.multScalar(matrixM, 0.0001));
+    	PnSparseMatrix leftHand = PnSparseMatrix.copyNew(left);
+    	
+    	PsDebug.warning("Creating variables");
+    	PdVector x = new PdVector(origin.getNumVertices());
+    	PdVector y = new PdVector(origin.getNumVertices());
+    	PdVector z = new PdVector(origin.getNumVertices());
+    	
+    	PnSparseMatrix matrixG_target = Util.meshToGradient(origin);
+        PnSparseMatrix MatrixGTranspose_target = PnSparseMatrix.transposeNew(matrixG_target);
+        PnSparseMatrix matrixM_target = Util.getM(origin);
+        
+        PsDebug.warning("Calculating right hand");
+    	PnSparseMatrix right = PnSparseMatrix.multMatrices(matrixM_target, PnSparseMatrix.multMatrices(MatrixGTranspose_target, matrixG_target, null), null);
+    	//s1.add(PnSparseMatrix.multScalar(matrixM, 0.0001));
+    	PnSparseMatrix rightHand = PnSparseMatrix.copyNew(right);
+    	
+    	// Get the current x/y/z values
+        PdVector x_target = new PdVector(intermediate.getNumVertices());
+        PdVector y_target = new PdVector(intermediate.getNumVertices());
+        PdVector z_target = new PdVector(intermediate.getNumVertices());
+        for(int i = 0; i < intermediate.getNumVertices(); i++) {
+            x_target.setEntry(i, intermediate.getVertex(i).getEntry(0));
+            y_target.setEntry(i, intermediate.getVertex(i).getEntry(1));
+            z_target.setEntry(i, intermediate.getVertex(i).getEntry(2));
+        }
+        
+        PdVector xGradient = PnSparseMatrix.rightMultVector(rightHand, x_target, null);
+        PdVector yGradient = PnSparseMatrix.rightMultVector(rightHand, y_target, null);
+        PdVector zGradient = PnSparseMatrix.rightMultVector(rightHand, z_target, null);
+        
+        PsDebug.warning("Solving linear problems");
+    	try {
+    		/*
+    		long pointerToFactorization = PnMumpsSolver.factor(s1, PnMumpsSolver.Type.GENERAL_SYMMETRIC);
+			PnMumpsSolver.solve(pointerToFactorization, x, rightX);
+			PnMumpsSolver.solve(pointerToFactorization, y, rightY);
+			PnMumpsSolver.solve(pointerToFactorization, z, rightZ);*/
+			
+			//PnMumpsSolver.solve(leftHand, x, rightX, Type.GENERAL_SYMMETRIC);
+			//PnMumpsSolver.solve(leftHand, y, rightY, Type.GENERAL_SYMMETRIC);
+			//PnMumpsSolver.solve(leftHand, z, rightZ, Type.GENERAL_SYMMETRIC);
+    		
+    		PnBiconjugateGradient solver = new PnBiconjugateGradient();
+    		
+    		solver.solve(leftHand, x, xGradient);
+    		solver.solve(leftHand, y, yGradient);
+    		solver.solve(leftHand, z, zGradient);
+		} catch (Exception e) {
+			e.printStackTrace();
+			PsDebug.message("Failed to solve.\n" + e.toString());
+		}
+    	PsDebug.warning("Linear problems solved");
+    	
+    	PdVector[] vertices = copy.getVertices();
+    	
+    	// Calculate the old and new mean
+    	PsDebug.warning("Calculating difference in mean");
+    	PdVector sumOld = new PdVector(3);
+    	PdVector sumNew = new PdVector(3);
+    	for (int vIndex = 0; vIndex < origin.getNumVertices(); vIndex++) {
+    		PdVector vertexReal = vertices[vIndex];
+    		sumOld.add(vertexReal);
+    		
+    		sumNew.setEntry(0, sumNew.getEntry(0) + x.getEntry(vIndex));
+    		sumNew.setEntry(1, sumNew.getEntry(1) + y.getEntry(vIndex));
+    		sumNew.setEntry(2, sumNew.getEntry(2) + z.getEntry(vIndex));
+    	}
+    	sumOld.multScalar(1.0 / origin.getNumVertices());
+    	sumNew.multScalar(1.0 / origin.getNumVertices());
+    	
+    	// Get the translation from the new mean to the old mean
+    	PdVector translationMean = PdVector.subNew(sumOld, sumNew);
+    	
+    	PsDebug.warning("Setting new vertex coordinates");
+    	for (int vIndex = 0; vIndex < copy.getNumVertices(); vIndex++) {
+    		PdVector newV = new PdVector(3);
+    		newV.setEntry(0, x.getEntry(vIndex));
+    		newV.setEntry(1, y.getEntry(vIndex));
+    		newV.setEntry(2, z.getEntry(vIndex));
+    		
+    		newV.add(translationMean);
+    		
+    		copy.setVertex(vIndex, newV);
+    	}
+    	
+    	copy.update(copy);
+		
+		return copy;
 	}
 	
 	/** Set two Geometries. */
